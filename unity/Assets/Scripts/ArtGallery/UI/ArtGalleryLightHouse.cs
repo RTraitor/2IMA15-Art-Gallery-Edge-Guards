@@ -2,6 +2,7 @@
 {
     using UnityEngine;
     using Util.Geometry.Polygon;
+    using Util.Geometry;
 
     /// <summary>
     /// Represents the lighthouse object in the game.
@@ -16,7 +17,7 @@
 
         private ArtGalleryController m_controller;
 
-        public Util.Geometry.LineSegment m_segment;
+        public LineSegment m_segment;
 
         /// <summary>
         /// Mesh variable of the art gallery.
