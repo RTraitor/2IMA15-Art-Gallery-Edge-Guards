@@ -16,6 +16,8 @@
 
         private ArtGalleryController m_controller;
 
+        public Util.Geometry.LineSegment m_segment;
+
         /// <summary>
         /// Mesh variable of the art gallery.
         /// </summary>
