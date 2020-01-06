@@ -9,6 +9,7 @@
     using UnityEngine.UI;
     using Util.Algorithms.Polygon;
     using Util.Geometry.Polygon;
+    using Util.Geometry;
     using Util.Math;
 
     /// <summary>
@@ -45,6 +46,8 @@
 
         public Polygon2D LevelPolygon { get; private set; }
 
+        public Dictionary<LineSegment, ArtGalleryLightHouse> segmentsWithLighthouse = new Dictionary<LineSegment, ArtGalleryLightHouse>();
+
         // Use this for initialization
         void Start()
         {
@@ -55,6 +58,7 @@
             AdvanceLevel();
         }
 
+        /*
         // Update is called once per frame
         void Update()
         {
@@ -73,6 +77,31 @@
             if (Input.GetMouseButtonUp(0))
             {
                 //check whether lighthouse is over the island
+
+                //We check for every segment, but it can only be one at the time
+                var segments = LevelPolygon.Segments;
+                bool isOnAnySegment = false;
+
+                foreach (var segment in segments)
+                {
+                    if(segment.IsOnSegment(m_selectedLighthouse.Pos))
+                    {
+                        isOnAnySegment = true;
+                    }
+                }
+
+                //If the lighthouse is on no segments, remove it
+                if (!(isOnAnySegment))
+                {
+                    // destroy the lighthouse
+                    m_solution.RemoveLighthouse(m_selectedLighthouse);
+                    Destroy(m_selectedLighthouse.gameObject);
+                    UpdateLighthouseText();
+
+                    segmentsWithLighthouse
+                }
+
+                
                 if (!LevelPolygon.ContainsInside(m_selectedLighthouse.Pos))
                 {
                     // destroy the lighthouse
@@ -80,14 +109,16 @@
                     Destroy(m_selectedLighthouse.gameObject);
                     UpdateLighthouseText();
                 }
+                
 
                 // lighthouse no longer selected
                 m_selectedLighthouse = null;
 
                 CheckSolution();
             }
-        }
 
+        }
+        */
         public void InitLevel()
         {
             // clear old level
@@ -142,21 +173,63 @@
         /// </summary>
         public void HandleIslandClick()
         {
-            // return if lighthouse was already selected or player can place no more lighthouses
-            if (m_selectedLighthouse != null || m_solution.Count >= m_maxNumberOfLighthouses)
-                return;
-
             // obtain mouse position
             var worldlocation = Camera.main.ScreenPointToRay(Input.mousePosition).origin;
             worldlocation.z = -2f;
 
+            //Calculate nearest segment from island click
+            float minDistance = float.MaxValue;
+            LineSegment closestSegment = null;
+
+            var segments = LevelPolygon.Segments;
+            foreach (var segment in segments)
+            {
+                Vector3 point1Vector3 = segment.Point1;
+                point1Vector3.z = -2f;
+                Vector3 point2Vector3 = segment.Point2;
+                point2Vector3.z = -2f;
+                float distanceToSegment = UnityEditor.HandleUtility.DistancePointLine(worldlocation, point1Vector3, point2Vector3);
+                if (distanceToSegment < minDistance)
+                {
+                    minDistance = distanceToSegment;
+                    closestSegment = segment;
+                }
+            }
+
+            if (segmentsWithLighthouse.ContainsKey(closestSegment))
+            {
+                var lighthouseToRemove = segmentsWithLighthouse[closestSegment];
+
+                // destroy the lighthouse
+                m_solution.RemoveLighthouse(lighthouseToRemove);
+                Destroy(lighthouseToRemove.gameObject);
+                UpdateLighthouseText();
+
+                segmentsWithLighthouse.Remove(closestSegment);
+                CheckSolution();
+                return;
+            }
+
+            // return if lighthouse was already selected or player can place no more lighthouses
+            if (m_selectedLighthouse != null || m_solution.Count >= m_maxNumberOfLighthouses)
+                return;
+            
+            Vector3 locationForLighthouse = closestSegment.Midpoint;
+            locationForLighthouse.z = -2f;
+
             // create a new lighthouse from prefab
-            var go = Instantiate(m_lighthousePrefab, worldlocation, Quaternion.identity) as GameObject;
+            var go = Instantiate(m_lighthousePrefab, locationForLighthouse, Quaternion.identity) as GameObject;
+
+            // Add closest line segment to lighthouse
+            go.GetComponent<ArtGalleryLightHouse>().m_segment = closestSegment;
 
             // add lighthouse to art gallery solution
             m_solution.AddLighthouse(go);
             UpdateLighthouseText();
 
+            // Add the segment/lighthouse combination to segmentWithLighthouse
+            segmentsWithLighthouse.Add(closestSegment, go.GetComponent<ArtGalleryLightHouse>());
+            
             CheckSolution();
         }
 
