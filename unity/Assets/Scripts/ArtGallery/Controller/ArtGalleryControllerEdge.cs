@@ -6,6 +6,7 @@ namespace ArtGallery {
     using Util.Geometry.DCEL;
     using Util.Geometry.Polygon;
     using Main;
+    using System.Linq;
 
     public class ArtGalleryControllerEdge : ArtGalleryController
     {
@@ -163,7 +164,7 @@ namespace ArtGallery {
         /// <summary>
         /// Compute the visible components per edge
         /// </summary>
-        private void computeVisibleComponentsPerEdge()
+        private void computeVisibleComponentsPerEdge(DCEL dcel)
         {
             foreach (var edgeID in edgeIDs)
             {
@@ -172,10 +173,101 @@ namespace ArtGallery {
                 // Compute visible components (faces)
                 foreach (var faceID in faceIDs)
                 {
-                    //TODO; if face is visible, add to visibleComps
+                    // For every convex component c, take one of its vertices z
+                    DCELVertex vertex = ((List<DCELVertex>) faceID.Value.OuterVertices)[0];
+                    // Compute VP(P, z); weakly visible points of P from z
+                    List<Vector2> weakVisiblePoints = computeWeaklyVisiblePointsInPFromZ(LevelPolygon, vertex.Pos);
+                    // For every vertex v in VP(P, z), add c to the set of the edge containing v
+                    foreach (var v in weakVisiblePoints)
+                    {
+                        foreach (var segment in dcel.Edges)
+                        {
+                            if (segment.Segment.IsOnSegment(v))
+                            {
+                                visibleComps.Add(faceID.Key);
+                            }
+                        }
+                    }
                 }
                 visibleCompIDsPerEdgeID.Add(edgeID.Key, visibleComps);
             }
+        }
+
+        /// <summary>
+        /// Computes the weakly visible points in polygon P from point z
+        /// </summary>
+        /// <param name="polygon">A polygon</param>
+        /// <param name="z">A point</param>
+        /// <returns>A list of visible points in polygon P from point z</returns>
+        private List<Vector2> computeWeaklyVisiblePointsInPFromZ(Polygon2D polygon, Vector2 z)
+        {
+            // Stack containing the vertices and some boundary points of P that are "visible" from z so far and at 
+            // termination contains all visible vertices from z
+            Stack<Vector2> visiblePoints = new Stack<Vector2>();
+            // Let z be the origin
+            Line xAxis = new Line(z, 0f);
+            // Let u0 be the intersection of an edge of P and the positive x axis that has the smallest x coordinate
+            Vector2? u0 = null;
+            Vector2? nextVertex = null;
+            foreach (var segment in polygon.Segments)
+            {
+                var intersection = segment.Intersect(xAxis);
+                if (intersection != null)
+                {
+                    if (u0 == null)
+                    {
+                        u0 = intersection;
+                    } else
+                    {
+                        if (intersection?.x < u0?.x)
+                        {
+                            u0 = intersection;
+                            nextVertex = segment.Point2;
+                        }
+                    }
+                }
+            }
+
+            // Let u0 be a vertex of polygon P, and the vertices are ordered counterclockwise
+            List<Vector2> vertices = new List<Vector2>((List<Vector2>) polygon.Vertices);
+            int nextIndex = vertices.IndexOf((Vector2) nextVertex);
+            vertices.Insert(nextIndex, (Vector2) u0);
+            // Shift the list such that u0 is at the end of the list
+            while (nextIndex >= 0)
+            {
+                var first = vertices[0];
+                vertices.Remove(first);
+                vertices.Add(first);
+                nextIndex--;
+            }
+            // Reverse the list such that the vertices are ordered counter clockwise
+            // Note that u0 is now at the front of the list
+            vertices.Reverse();
+            Polygon2D poly = new Polygon2D(vertices); //ADDED, NOT SURE IF NECESSARY
+
+            // Initially the stack contains u0 and u1
+            visiblePoints.Push((Vector2) u0);
+            visiblePoints.Push(vertices[1]);
+            // Next element to check is u2
+            int nextElement = vertices.IndexOf(vertices[2]);
+            // Algorithm terminates when u0 is pushed on the stack again
+            while (!nextElement.Equals(vertices.IndexOf((Vector2) u0)))
+            {
+                // Get index of element u_{i-2}
+                int element2Prev = nextElement - 2; 
+                
+                //Check if u_{i-2} lies to the right or left of line segment (z, s_j)
+                if (new LineSegment(z, visiblePoints.Peek()).IsRightOf(vertices[element2Prev]))
+                {
+                    // Case C1
+                } 
+                else
+                {
+                    // Case C2
+                }
+            }
+
+            return visiblePoints.ToList();
         }
 
         /// <summary>
@@ -199,7 +291,7 @@ namespace ArtGallery {
             // Give IDs to the edges
             setEdgeIDs((List<LineSegment>) LevelPolygon.Segments);
             // Store visible convex components(/faces) for each edge by index
-            computeVisibleComponentsPerEdge();
+            computeVisibleComponentsPerEdge(dcel);
             // Calculate the needed number of edge guards
             return SetCover.Solve(new HashSet<int>(faceIDs.Keys), visibleCompIDsPerEdgeID);
         }
