@@ -440,9 +440,6 @@ namespace ArtGallery {
 
         public override void HandleIslandClick()
         {
-            // return if lighthouse was already selected or player can place no more lighthouses
-            if (m_selectedLighthouse != null || m_solution.Count >= m_maxNumberOfLighthouses)
-                return;
 
             // obtain mouse position
             var worldlocation = Camera.main.ScreenPointToRay(Input.mousePosition).origin;
