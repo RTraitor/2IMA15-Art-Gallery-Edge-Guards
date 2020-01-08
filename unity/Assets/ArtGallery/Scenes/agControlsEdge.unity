@@ -207,13 +207,13 @@ PrefabInstance:
     - target: {fileID: 11497240, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
       propertyPath: m_Text
       value: "Welcome as the new head of security in our art gallery!\r\n\r\nThe security
-        guards who look exactly like torches have to be assigned a certain edge they
+        guards who look exactly like torches have to be assigned a certain wall they
         will patrol.\n\nTo prevent excessive workload, each guard can only patrol
-        a single edge.\n\r\nTry to assign the guards in such a way that the whole
+        a single wall.\n\r\nTry to assign the guards in such a way that the whole
         art gallery will be covered!\n\nNote: Guards can look around the corners of
-        edges they patrol!\n\r\nControls:\r\n- To assign a guard to an edge, click
-        near an edge inside the polygon\n- To unassign a guard from an edge, again
-        click near the edge with the guard inside the polygon"
+        a wall they patrol!\n\r\nControls:\r\n- To assign a guard to a wall, click
+        near an edge inside the polygon\n- To unassign a guard from a wall, again
+        click near that edge inside the polygon"
       objectReference: {fileID: 0}
     - target: {fileID: 11497240, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
       propertyPath: m_FontData.m_Font
