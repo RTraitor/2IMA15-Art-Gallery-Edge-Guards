@@ -286,131 +286,245 @@ namespace ArtGallery {
             visiblePoints.Push(vertices[1]);
             // Next element to check is u2
             int nextElement = vertices.IndexOf(vertices[2]);
-            // Algorithm terminates when u0 is pushed on the stack again
-            // TODO: Currently terminates when checking next element is u0,
-            // not when u0 is pushed on the stack again 
-            while (!nextElement.Equals(vertices.IndexOf((Vector2) u0)))
+
+            // Get index of element u_{i-2}
+            int element2Prev;
+            if (nextElement - 2 < 0)
             {
-                // Get index of element u_{i-2}
-                int element2Prev;
-                if (nextElement - 2 < 0)
-                {
-                    element2Prev = vertices.Count - (nextElement - 2);
-                }
-                else
-                {
-                    element2Prev = nextElement - 2;
-                }
-                
-                //Check if u_{i-2} lies to the right or left of line segment (z, s_j)
-                if (new LineSegment(z, visiblePoints.Peek()).IsRightOf(vertices[element2Prev]))
-                {
-                    // Case C1
-                    // Polygon from z and the current stack
-                    Polygon2D polyZAndStack = new Polygon2D(visiblePoints);
-                    polyZAndStack.AddVertexFirst(z);
-                    // Determine region in which nextElement lies
-                    // Region3 is the interior of Z
-                    // Region1 and Region2 are created from the exterior of Z
-                    // by a line through z and the first element on the stack
-                    if (polyZAndStack.ContainsInside(vertices[nextElement]))
-                    {
-                        // NextElement in Region3
-                        // Edge (NextElement-1, NextElement) blocks points in the stack
-                        // Pop elements off the stack until some s_m such that edge (u_(i-1), u_i)
-                        // intersects (s_m, s_(m+1)) at v or u_i lies to the left of line (z, s_m)
-                        LineSegment currNextLine = new LineSegment(vertices[nextElement - 1], vertices[nextElement]);
-                        Vector2? v = currNextLine.Intersect(new LineSegment(visiblePoints.Peek(), visiblePoints.ElementAt(1)));
-                        while (v == null || !new Line(z, visiblePoints.ElementAt(1)).PointRightOfLine(vertices[nextElement]))
-                        {
-                            visiblePoints.Pop();
-                            v = currNextLine.Intersect(new LineSegment(visiblePoints.Peek(), visiblePoints.ElementAt(1)));
-                        }
-                        // Still have s_(m+1) on the stack, which needs to be removed from the stack
-                        Vector2 sm1 = visiblePoints.Pop();
-                        // If edge (u_(i-1), u_i) intersects (s_m, s_(m+1))
-                        if (v != null)
-                        {
-                            LineSegment edgeSMV = new LineSegment(visiblePoints.Peek(), (Vector2) v); //(s_m, v)
-                            // Scan vertices of P in CCW order until edge (u_(k-1), u_k) crosses edge (s_m, v) at w
-                            // for the first time. 
-                            for (int i = 0; i < vertices.Count; i++)
-                            {
-                                int index = (nextElement + i) % (vertices.Count); //k
-                                int indexPrev = (nextElement + i - 1) % (vertices.Count); //k-1
-                                LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]); //(u_(k-1), u_k)
-                                Vector2? w = segment.Intersect(edgeSMV);
-                                if (w != null)
-                                {
-                                    // New configuration becomes:
-                                    // (u_(k+1) ; s_0, s_1, ..., s_m, w, u_k)
-                                    nextElement = (index + 1) % (vertices.Count);
-                                    visiblePoints.Push((Vector2) w);
-                                    visiblePoints.Push(vertices[index]);
-                                    break;
-                                }
-                            }
-                        }
-                        else // u_i lies to the left of line (z, s_m)
-                        {
-                            v = new LineSegment(visiblePoints.Peek(), sm1).Intersect(new Line(z, vertices[nextElement]));
-                            visiblePoints.Push((Vector2) v);
-                            visiblePoints.Push(vertices[nextElement]);
-                            nextElement = (nextElement + 1) % vertices.Count;
-                        }
-                    }
-                    else
-                    {
-                        // NextElement in Region1 or Region2
-                        Line regionSplit = new Line(z, visiblePoints.Peek());
-                        if (regionSplit.PointRightOfLine(vertices[nextElement]))
-                        {
-                            // NextElement in Region1
-                            // NextElement not visible from z
-                            // Scan vertices of P from nextElement until some vertex u_k
-                            int crossedXAxisCount = 0;
-                            for (int i = 0; i < vertices.Count; i++)
-                            {
-                                int index = (nextElement + i) % (vertices.Count);
-                                int indexPrev = (nextElement + i - 1) % (vertices.Count);
-                                LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]);
-                                // If segment intersects the positive x-axis then we increase the count
-                                if (segment.Intersect(xAxis)?.x > z.x)
-                                {
-                                    crossedXAxisCount++;
-                                }
-                                Ray2D halfLine = new Ray2D(visiblePoints.Peek(), RotatePoint(z, visiblePoints.Peek(), 180));
-                                Vector2? intersection = segment.Intersect(halfLine);
-                                //If the x-axis intersection count is even and the intersection is not the origin of the ray
-                                if (!intersection.Equals(null) && !intersection.Equals(visiblePoints.Peek()) && crossedXAxisCount % 2 == 0)
-                                {
-                                    Vector2 v = (Vector2) segment.Intersect(halfLine);
-                                    nextElement = (index + 1) % vertices.Count;
-                                    visiblePoints.Push(v);
-                                    visiblePoints.Push(vertices[index]);
-                                    break;
-                                }
-                            }
-                            
-                        }
-                        else
-                        {
-                            // NextElement in Region2
-                            visiblePoints.Push(vertices[nextElement]);
-                            nextElement = (nextElement + 1) % vertices.Count;
-                        }
-                    }
-                }
-                else
-                {
-                    // Case C2
-                }
+                element2Prev = vertices.Count - (nextElement - 2);
+            }
+            else
+            {
+                element2Prev = nextElement - 2;
             }
 
-            return visiblePoints.ToList();
+            //Check if u_{i-2} lies to the right or left of line segment (z, s_j)
+            Stack<Vector2> result; 
+            if (new LineSegment(z, visiblePoints.Peek()).IsRightOf(vertices[element2Prev]))
+            {
+                // Case C1
+                result = case1(visiblePoints, vertices, nextElement, z, xAxis);
+            }
+            else
+            {
+                // Case C2
+                result = case2(visiblePoints, vertices, nextElement, z, xAxis);
+            }
+            return result.ToList();
         }
 
-        
+        /// <summary>
+        /// Handles region 1 in case 1 of algorithm VP(P, z)
+        /// </summary>
+        /// <param name="visiblePoints">Current stack of "visible" points</param>
+        /// <param name="vertices">List of vertices in CCW order</param>
+        /// <param name="nextElement">Next element to check</param>
+        /// <param name="z">Point of origin</param>
+        /// <param name="xAxis">Horizontal line through z</param>
+        /// <returns>Returns a stack of visible points in P from point z</returns>
+        private Stack<Vector2> case1Region1(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
+        {
+            // NextElement in Region1
+            // NextElement not visible from z
+            // Scan vertices of P from nextElement until some vertex u_k
+            int crossedXAxisCount = 0;
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                int index = (nextElement + i) % (vertices.Count);
+                int indexPrev = (nextElement + i - 1) % (vertices.Count);
+                LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]);
+                // If segment intersects the positive x-axis then we increase the count
+                if (segment.Intersect(xAxis)?.x > z.x)
+                {
+                    crossedXAxisCount++;
+                }
+                Ray2D halfLine = new Ray2D(visiblePoints.Peek(), RotatePoint(z, visiblePoints.Peek(), 180));
+                Vector2? intersection = segment.Intersect(halfLine);
+                //If the x-axis intersection count is even and the intersection is not the origin of the ray
+                if (!intersection.Equals(null) && !intersection.Equals(visiblePoints.Peek()) && crossedXAxisCount % 2 == 0)
+                {
+                    Vector2 v = (Vector2)segment.Intersect(halfLine);
+                    nextElement = (index + 1) % vertices.Count;
+                    visiblePoints.Push(v);
+                    if (index == 0)
+                    {
+                        return visiblePoints;
+                    }
+                    visiblePoints.Push(vertices[index]);
+                    break;
+                }
+            }
+            return case1(visiblePoints, vertices, nextElement, z, xAxis);
+        }
+
+        /// <summary>
+        /// Handles region 2 in case 1 of algorithm VP(P, z)
+        /// </summary>
+        /// <param name="visiblePoints">Current stack of "visible" points</param>
+        /// <param name="vertices">List of vertices in CCW order</param>
+        /// <param name="nextElement">Next element to check</param>
+        /// <param name="z">Point of origin</param>
+        /// <param name="xAxis">Horizontal line through z</param>
+        /// <returns>Returns a stack of visible points in P from point z</returns>
+        private Stack<Vector2> case1Region2(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
+        {
+            // NextElement in Region2
+            if (nextElement == 0)
+            {
+                return visiblePoints;
+            }
+            visiblePoints.Push(vertices[nextElement]);
+            nextElement = (nextElement + 1) % vertices.Count;
+            return case1(visiblePoints, vertices, nextElement, z, xAxis);
+        }
+
+        /// <summary>
+        /// Handles region 1 in case 2 of algorithm VP(P, z)
+        /// </summary>
+        /// <param name="visiblePoints">Current stack of "visible" points</param>
+        /// <param name="vertices">List of vertices in CCW order</param>
+        /// <param name="nextElement">Next element to check</param>
+        /// <param name="z">Point of origin</param>
+        /// <param name="xAxis">Horizontal line through z</param>
+        /// <returns>Returns a stack of visible points in P from point z</returns>
+        private Stack<Vector2> case2Region1(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
+        {
+            //TODO
+            return new Stack<Vector2>();
+        }
+
+        /// <summary>
+        /// Handles region 2 in case 2 of algorithm VP(P, z)
+        /// </summary>
+        /// <param name="visiblePoints">Current stack of "visible" points</param>
+        /// <param name="vertices">List of vertices in CCW order</param>
+        /// <param name="nextElement">Next element to check</param>
+        /// <param name="z">Point of origin</param>
+        /// <param name="xAxis">Horizontal line through z</param>
+        /// <returns>Returns a stack of visible points in P from point z</returns>
+        private Stack<Vector2> case2Region2(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
+        {
+            //TODO
+            return new Stack<Vector2>();
+        }
+
+        /// <summary>
+        /// Handles region 3 of cases 1 and 2 of algorithm VP(P, z)
+        /// </summary>
+        /// <param name="visiblePoints">Current stack of "visible" points</param>
+        /// <param name="vertices">List of vertices in CCW order</param>
+        /// <param name="nextElement">Next element to check</param>
+        /// <param name="z">Point of origin</param>
+        /// <param name="xAxis">Horizontal line through z</param>
+        /// <returns>Returns a stack of visible points in P from point z</returns>
+        private Stack<Vector2> region3(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
+        {
+            // NextElement in Region3
+            // Edge (NextElement-1, NextElement) blocks points in the stack
+            // Pop elements off the stack until some s_m such that edge (u_(i-1), u_i)
+            // intersects (s_m, s_(m+1)) at v or u_i lies to the left of line (z, s_m)
+            LineSegment currNextLine = new LineSegment(vertices[nextElement - 1], vertices[nextElement]);
+            Vector2? v = currNextLine.Intersect(new LineSegment(visiblePoints.Peek(), visiblePoints.ElementAt(1)));
+            while (v == null || !new Line(z, visiblePoints.ElementAt(1)).PointRightOfLine(vertices[nextElement]))
+            {
+                visiblePoints.Pop();
+                v = currNextLine.Intersect(new LineSegment(visiblePoints.Peek(), visiblePoints.ElementAt(1)));
+            }
+            // Still have s_(m+1) on the stack, which needs to be removed from the stack
+            Vector2 sm1 = visiblePoints.Pop();
+            // If edge (u_(i-1), u_i) intersects (s_m, s_(m+1))
+            if (v != null)
+            {
+                LineSegment edgeSMV = new LineSegment(visiblePoints.Peek(), (Vector2)v); //(s_m, v)
+                // Scan vertices of P in CCW order until edge (u_(k-1), u_k) crosses edge (s_m, v) at w
+                // for the first time. 
+                for (int i = 0; i < vertices.Count; i++)
+                {
+                    int index = (nextElement + i) % (vertices.Count); //k
+                    int indexPrev = (nextElement + i - 1) % (vertices.Count); //k-1
+                    LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]); //(u_(k-1), u_k)
+                    Vector2? w = segment.Intersect(edgeSMV);
+                    if (w != null)
+                    {
+                        // New configuration becomes:
+                        // (u_(k+1) ; s_0, s_1, ..., s_m, w, u_k)
+                        nextElement = (index + 1) % (vertices.Count);
+                        visiblePoints.Push((Vector2)w);
+                        if (index == 0)
+                        {
+                            return visiblePoints;
+                        }
+                        visiblePoints.Push(vertices[index]);
+                        break;
+                    }
+                }
+                return case1(visiblePoints, vertices, nextElement, z, xAxis);
+            }
+            else // u_i lies to the left of line (z, s_m)
+            {
+                v = new LineSegment(visiblePoints.Peek(), sm1).Intersect(new Line(z, vertices[nextElement]));
+                visiblePoints.Push((Vector2)v);
+                if (nextElement == 0)
+                {
+                    return visiblePoints;
+                }
+                visiblePoints.Push(vertices[nextElement]);
+                nextElement = (nextElement + 1) % vertices.Count;
+                return case2(visiblePoints, vertices, nextElement, z, xAxis);
+            }
+        }
+
+        /// <summary>
+        /// Handles case 1 of algorithm VP(P, z)
+        /// </summary>
+        /// <param name="visiblePoints">Current stack of "visible" points</param>
+        /// <param name="vertices">List of vertices in CCW order</param>
+        /// <param name="nextElement">Next element to check</param>
+        /// <param name="z">Point of origin</param>
+        /// <param name="xAxis">Horizontal line through z</param>
+        /// <returns>Returns a stack of visible points in P from point z</returns>
+        private Stack<Vector2> case1(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
+        {
+            // Polygon from z and the current stack
+            Polygon2D polyZAndStack = new Polygon2D(visiblePoints);
+            polyZAndStack.AddVertexFirst(z);
+            // Determine region in which nextElement lies
+            // Region3 is the interior of Z
+            // Region1 and Region2 are created from the exterior of Z
+            // by a line through z and the first element on the stack
+            if (polyZAndStack.ContainsInside(vertices[nextElement]))
+            {
+                return region3(visiblePoints, vertices, nextElement, z, xAxis);
+            }
+            else
+            {
+                // NextElement in Region1 or Region2
+                Line regionSplit = new Line(z, visiblePoints.Peek());
+                if (regionSplit.PointRightOfLine(vertices[nextElement]))
+                {
+                    return case1Region1(visiblePoints, vertices, nextElement, z, xAxis);
+                }
+                else
+                {
+                    return case1Region2(visiblePoints, vertices, nextElement, z, xAxis);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles case 2 of algorithm VP(P, z)
+        /// </summary>
+        /// <param name="visiblePoints">Current stack of "visible" points</param>
+        /// <param name="vertices">List of vertices in CCW order</param>
+        /// <param name="nextElement">Next element to check</param>
+        /// <param name="z">Point of origin</param>
+        /// <param name="xAxis">Horizontal line through z</param>
+        /// <returns>Returns a stack of visible points in P from point z</returns>
+        private Stack<Vector2> case2(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
+        {
+            //TODO
+            return new Stack<Vector2>();
+        }
 
         /// <summary>
         /// Approximate the minimum number of edge guards needed for the current level's polygon
