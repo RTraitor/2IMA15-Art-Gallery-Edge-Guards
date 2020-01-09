@@ -88,7 +88,7 @@
             }
         }
 
-        public void InitLevel()
+        public virtual void InitLevel()
         {
             // clear old level
             m_solution.Clear();

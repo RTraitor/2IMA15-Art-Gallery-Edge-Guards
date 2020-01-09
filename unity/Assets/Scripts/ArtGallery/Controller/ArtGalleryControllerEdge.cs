@@ -7,6 +7,8 @@ namespace ArtGallery {
     using Util.Geometry.Polygon;
     using Main;
     using System.Linq;
+    using System;
+    using Util.Math;
 
     public class ArtGalleryControllerEdge : ArtGalleryController
     {
@@ -16,98 +18,219 @@ namespace ArtGallery {
         private Dictionary<int, LineSegment> edgeIDs = new Dictionary<int, LineSegment>();
         private Dictionary<int, HashSet<int>> visibleCompIDsPerEdgeID = new Dictionary<int, HashSet<int>>();
 
+        //Unity references
+        private VisibilityAreaDrawer m_areaDrawer;
+
         // Update is called once per frame COULD GIVE PROBLEMS - TEST NECESSARY
-        void Update() { }
-
-        /// <summary>
-        /// Generate lines through every pair of vertices from a pointset
-        /// </summary>
-        /// <param name="vertices">A list of vertices</param>
-        /// <returns>
-        /// A list of lines through each pair of vertices in the given pointset "vertices"
-        /// </returns>
-        private List<Line> generateLines(List<Vector2> vertices) 
-        {
-            List<Line> lines = new List<Line>();
-            foreach (Vector2 vertex1 in vertices)
-            {
-                foreach (Vector2 vertex2 in vertices)
-                {
-                    if (vertex1 != vertex2)
-                    {
-                        Line line = new Line(vertex1, vertex2);
-                        // Since each pair is checked twice, we check if we  
-                        // already included the line instead of adding it twice
-                        if (!lines.Contains(line))
-                        {
-                            lines.Add(line);
-                        }
-                    }
-                }
+        void Update() {
+            //handle input key presses
+            if (Input.GetKeyDown("a")) {
+                m_areaDrawer.ToggleDrawAll();
             }
-            return lines;
+            if (Input.GetKeyDown("s")) {
+                m_areaDrawer.ToggleDrawEdges();
+            }
+            if (Input.GetKeyDown("v")) {
+                m_areaDrawer.ToggleDrawVertices();
+            }
+            if (Input.GetKeyDown("f")) {
+                m_areaDrawer.ToggleDrawFaces();
+            }
+        }
+
+        public override void InitLevel() {
+            base.InitLevel();
+            Debug.Log("Initialising Level...");
+            Debug.Log(LevelPolygon.Segments.ToString());
+            DCEL dcell = new DCEL();
+            foreach (LineSegment s in LevelPolygon.Segments) {
+                Debug.Log("Segment: " + s.ToString());
+                dcell.AddSegment(s);
+            }
+
+            m_areaDrawer.VisibilityAreas = dcell;
         }
 
         /// <summary>
-        /// Line segments are created from the intersection of each pair of lines to each
-        /// of the (at most four) points corresponding to the intersecting lines
+        /// Computes the visibilty regions of a given polygon and outputs it as a DCEL
         /// </summary>
-        /// <param name="lines">A list of lines</param>
+        /// <param name="poly">The polygon to compute the visibility regions for</param>
         /// <returns>
-        /// Line segments created from the intersection of each pair of lines to each
-        /// of the (at most four) points corresponding to the intersecting lines
+        /// A DCEL containing the visibility regions of a polygon
         /// </returns>
-        private List<LineSegment> generateLineSegments(List<Line> lines)
-        {
-            List<Vector2> intersections = new List<Vector2>();
+        private DCEL computeVisibilityRegions(Polygon2D poly) {
+            ICollection<LineSegment> segments = getVisibilitySegments(poly);
+            return mergeSegments(segments);
+        }
+
+        /// <summary>
+        /// Gets the (overlapping) Line Segments that are needed to compute a given polygon's visibility regions
+        /// </summary>
+        /// <param name="poly">The polygon to compute the segments for</param>
+        /// <returns>
+        /// The (overlapping) Line Segments that are needed to compute the given polygon's visbility regions
+        /// </returns>
+        private ICollection<LineSegment> getVisibilitySegments(Polygon2D poly) {
+            LinkedList<LineSegment> segments = new LinkedList<LineSegment>();
+            
+            foreach (Vector2 v in poly.Vertices) {
+                foreach (Vector2 v2 in poly.Vertices) {
+                    if (v.Equals(v2)) {
+                        continue;
+                    }
+
+                    if (poly.isConvex(v2) == false) { // v2 is Reflex
+
+                        LineSegment s = new LineSegment(v, v2);
+                        if (isIntersectPolygon(poly, s)) {
+                            // Skip if the two vertices cannot see each other.
+                            // NOTE: This includes colinear points (meaning that only 'adjacent' colinear points are not skipped)
+                            continue;
+                        }
+
+                        Vector2? closestIntersection = intersectPolygonClosest(poly, new Line(v, v2));
+
+                        if (closestIntersection != null) {
+                            segments.AddFirst(new LineSegment(v2, (Vector2) closestIntersection));
+                        }
+                        
+                    }
+                }
+            }
+            return segments;
+        }
+
+        /// <summary>
+        /// Finds the closest intersection of a Line's 'second point' and a polygon.
+        /// </summary>
+        /// <param name="poly">The polygon to find the closest intersection with</param>
+        /// <param name="l">A line segment to check intersections with. Only the Ray from the line's 'second' point is 
+        /// considered for intersections. 
+        /// The 'second point' of l is a concave vertex.
+        /// TODO: change to Ray2D rather than Line</param>
+        /// <returns>
+        /// The closest intersection from the line's second point with the given polygon
+        /// </returns>
+        // Finds the closest proper intersection
+        // l.p1 is vertex
+        // l.p2 is concave vertex
+        private Vector2? intersectPolygonClosest(Polygon2D poly, Line l) {
+            LineSegment smallestSegment = null;
+            foreach (LineSegment s in poly.Segments) {
+                // Ignore the segments that the ray starts in (if any)
+                if (s.IsOnSegment(l.Point2)) {
+                    continue;
+                }
+
+                // Will contain the intersection of l and s (if any)
+                Vector2? intersection = null;
+
+                // Edge Case: Handle segments that completely overlap the given line
+                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2)) {
+                    // All points of the segment overlap!
+                    if ((new LineSegment(l.Point2, s.Point1)).IsOnSegment(s.Point2)) {
+                        // Endpoint of the segment is closer
+                        intersection = s.Point2;
+                    } else if ((new LineSegment(l.Point2, s.Point2)).IsOnSegment(s.Point1)) {
+                        // Beginpoint of the segment is closer
+                        intersection = s.Point1;
+                    }
+                } else {
+                    // A single point of the segment can overlap
+                    intersection = s.Intersect(l);
+                }
+
+                // Ignore intersections on the 'wrong' side
+                // TODO: optimize this(?); ignore segments on one side of the line perpendicular to l
+                if (intersection != null && (new LineSegment(l.Point1, (Vector2) intersection)).IsOnSegment(l.Point2)) {
+                    continue;
+                }
+
+                // There is an intersection, and it was closer than the previous closest intersection
+                if (intersection != null && (smallestSegment == null || smallestSegment.IsOnSegment((Vector2) intersection))) {
+                    smallestSegment = new LineSegment(l.Point2, (Vector2) intersection);
+                }
+            }
+            if (smallestSegment != null) {
+                return smallestSegment.Point2;
+            }
+            return null;
+        }
+
+
+        /// <summary>
+        /// Checks whether a given segment between a polygon's vertices intersects at least one of that polygon's segments
+        /// </summary>
+        /// <param name="poly">The polygon to check for intersections with</param>
+        /// <param name="vertexSegment">A line segment from one of poly's vertices to another of poly's vertices
+        /// (possibly overlapping one or more segments of poly)</param>
+        /// <returns>
+        /// true iff the given segment overlaps at least one of the polygon's segments of vertices,
+        /// ignoring any segments with a shared begin or end point with vertexSegment
+        /// </returns>
+        private bool isIntersectPolygon(Polygon2D poly, LineSegment vertexSegment) {
+            foreach (LineSegment s in poly.Segments) {
+                // Skip the segments that have a begin or end point in common with the given segment
+                if (s.Point1 == vertexSegment.Point1 || s.Point2 == vertexSegment.Point2
+                        || s.Point1 == vertexSegment.Point2 || s.Point2 == vertexSegment.Point1) {
+                    continue;
+                }
+
+                // Edge Case: Skip segments whose begin and end points are BOTH colinear with the given segment
+                //if (Line.Colinear(s.Point1, s.Point2, vertexSegment.Point1)
+                //        && Line.Colinear(s.Point1, s.Point2, vertexSegment.Point2)) {
+                //    continue;
+                //}
+
+                // Skip begin and end points of segments
+                Vector2? x = vertexSegment.Intersect(s);
+                if (x != null) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Creates a DCEL from a given list of Line Segments, where intersections of those
+        /// segments are transformed into DCEL vertices and where line segments between those
+        /// intersections are transformed to DCEL edges.
+        /// </summary>
+        /// <param name="segments">A list of line segments</param>
+        /// <returns>
+        /// A DCEL created from the given list of segments
+        /// </returns>
+        private DCEL mergeSegments(ICollection<LineSegment> segments) {
+            
             List<LineSegment> lineSegments = new List<LineSegment>();
-            // For each pair of lines
-            foreach (Line line1 in lines)
-            {
-                foreach (Line line2 in lines)
-                {
-                    if (!line1.Equals(line2))
-                    {
-                        Vector2 intersection = (Vector2)line1.Intersect(line2);
-                        // Each pair of lines is checked twice, we check if we 
-                        // already included the intersection instead of adding it twice
-                        if (intersection != null && LevelPolygon.ContainsInside(intersection))
-                        {
-                            intersections.Add(intersection);
-                            lineSegments.Add(new LineSegment(line1.Point1, intersection));
-                            lineSegments.Add(new LineSegment(line1.Point2, intersection));
-                            lineSegments.Add(new LineSegment(line2.Point1, intersection));
-                            lineSegments.Add(new LineSegment(line2.Point2, intersection));
+            // For each pair of segments
+            foreach (LineSegment s1 in segments) {
+                foreach (LineSegment s2 in segments) {
+                    // Segments must not be the same
+                    if (!s1.Equals(s2)) {
+                        Vector2? intersection = s1.Intersect(s2);
+                        
+                        // TODO: Handle multiple intersections in the same linesegment
+
+                        // If the segments intersect, create a new vertex at the intersecion and split the segments
+                        if (intersection != null) {
+                            lineSegments.Add(new LineSegment(s1.Point1, (Vector2) intersection));
+                            lineSegments.Add(new LineSegment(s1.Point2, (Vector2) intersection));
+                            lineSegments.Add(new LineSegment(s2.Point1, (Vector2) intersection));
+                            lineSegments.Add(new LineSegment(s2.Point2, (Vector2) intersection));
                         }
                     }
                 }
             }
-            return lineSegments;
-        }
 
-        /// <summary>
-        /// Create a DCEL from a list of line segments and a polygon
-        /// </summary>
-        /// <param name="polygon">A Polygon</param>
-        /// <param name="lineSegments">A list of line segments</param>
-        /// <returns>
-        /// A DCEL created from a starting polygon and a list of lineSegments
-        /// </returns>
-        private DCEL createDCELFromPolygonAndSegments(Polygon2D polygon, List<LineSegment> lineSegments)
-        {
+            // Create the DCEL
             DCEL dcel = new DCEL();
-            // Add the segments of the polygon to the DCEL
-            foreach (LineSegment segment in polygon.Segments)
-            {
-                dcel.AddSegment(segment);
-            }
 
             // Add the segments to the DCEL
-            foreach (LineSegment segment in lineSegments)
-            {
+            foreach (LineSegment segment in lineSegments) {
                 dcel.AddSegment(segment);
             }
-            return dcel; 
+            return dcel;
         }
 
         /// <summary>
@@ -280,20 +403,21 @@ namespace ArtGallery {
         /// </returns>
         private int calcEdgeGuards()
         {
-            // Draw lines through every pair of vertices 
-            List<Line> lines = generateLines((List<Vector2>) LevelPolygon.Vertices);
-            // Create convex components 
-            List<LineSegment> lineSegments = generateLineSegments(lines);
-            DCEL dcel = createDCELFromPolygonAndSegments(LevelPolygon, lineSegments);
-            List<Face> faces = (List<Face>) dcel.InnerFaces;
-            // Give IDs to the faces
-            setFaceIDs(faces);
-            // Give IDs to the edges
-            setEdgeIDs((List<LineSegment>) LevelPolygon.Segments);
-            // Store visible convex components(/faces) for each edge by index
-            computeVisibleComponentsPerEdge(dcel);
-            // Calculate the needed number of edge guards
-            return SetCover.Solve(new HashSet<int>(faceIDs.Keys), visibleCompIDsPerEdgeID);
+            //// Draw lines through every pair of vertices 
+            //List<Line> lines = generateLines((List<Vector2>) LevelPolygon.Vertices);
+            //// Create convex components 
+            //List<LineSegment> lineSegments = generateLineSegments(lines);
+            //DCEL dcel = createDCELFromPolygonAndSegments(LevelPolygon, lineSegments);
+            //List<Face> faces = (List<Face>) dcel.InnerFaces;
+            //// Give IDs to the faces
+            //setFaceIDs(faces);
+            //// Give IDs to the edges
+            //setEdgeIDs((List<LineSegment>) LevelPolygon.Segments);
+            //// Store visible convex components(/faces) for each edge by index
+            //computeVisibleComponentsPerEdge(dcel);
+            //// Calculate the needed number of edge guards
+            //return SetCover.Solve(new HashSet<int>(faceIDs.Keys), visibleCompIDsPerEdgeID);
+            return 5;
         }
 
         public override void HandleIslandClick()

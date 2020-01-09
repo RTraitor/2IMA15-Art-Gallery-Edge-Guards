@@ -393,5 +393,29 @@
 
             return true;
         }
+
+        public bool? isConvex(Vector2 pos) {
+            var node = m_vertices.Find(pos);
+            if (node == null)
+                return null;
+            var prevNode = node.Previous ?? m_vertices.Last;
+            var nextNode = node.Next ?? m_vertices.First;
+
+            // flip orientation if polygon counter clockwise 
+            var dir = (IsClockwise() ? 1 : -1);
+
+            // do not consider degenerate case with two equal nodes
+            if (MathUtil.EqualsEps(node.Value, nextNode.Value))
+                return true;
+
+            // check for dangling edges or illegal turn
+            if (MathUtil.EqualsEps(prevNode.Value, nextNode.Value) ||
+                dir * MathUtil.Orient2D(prevNode.Value, node.Value, nextNode.Value) > 0) {
+                return false;
+            }
+            return true;
+        }
+
+        
     }
 }
