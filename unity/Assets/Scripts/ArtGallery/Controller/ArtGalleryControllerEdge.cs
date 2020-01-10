@@ -9,13 +9,14 @@ namespace ArtGallery {
     using System.Linq;
     using System;
     using Util.Math;
+    using Util.Algorithms.Polygon;
 
     public class ArtGalleryControllerEdge : ArtGalleryController
     {
 
         public Dictionary<LineSegment, ArtGalleryLightHouse> segmentsWithLighthouse = new Dictionary<LineSegment, ArtGalleryLightHouse>();
         private Dictionary<int, Face> faceIDs = new Dictionary<int, Face>();
-        private Dictionary<int, LineSegment> edgeIDs = new Dictionary<int, LineSegment>();
+        private Dictionary<LineSegment, int> edgeIDs = new Dictionary<LineSegment, int>();
         private Dictionary<int, HashSet<int>> visibleCompIDsPerEdgeID = new Dictionary<int, HashSet<int>>();
 
         //Unity references
@@ -55,6 +56,8 @@ namespace ArtGallery {
                 m_areaDrawer.VisibilityAreas = dcell;
             }
             Debug.Log("Level Drawer Initalised!");
+
+            int five = calcNeededNrOfEdgeGuards();
         }
 
         /// <summary>
@@ -297,10 +300,10 @@ namespace ArtGallery {
         /// <returns>
         /// The edge corresponding to the given id
         /// </returns>
-        private LineSegment getEdgeByID(int id)
+        private int getEdgeIDByEdge(LineSegment segment)
         {
-            LineSegment edge = edgeIDs[id];
-            return edge;
+            int edgeID = edgeIDs[segment];
+            return edgeID;
         }
 
         /// <summary>
@@ -309,9 +312,15 @@ namespace ArtGallery {
         /// <param name="edges">A list of edges</param>
         private void setEdgeIDs(List<LineSegment> edges)
         {
-            for (int i = edgeIDs.Count; i < edgeIDs.Count + edges.Count - 1; i++)
+            Debug.Log("size of the list: " + edges.Count);
+            int count = 0;
+            int edgeIDCount = edgeIDs.Count;
+            for (int i = edgeIDCount; i < edgeIDCount + edges.Count; i++)
             {
-                edgeIDs.Add(i, edges[i]);
+                Debug.Log(count);
+                LineSegment currentEdge = edges[count];
+                edgeIDs.Add(currentEdge, i);
+                count++;
             }
         }
 
@@ -766,7 +775,7 @@ namespace ArtGallery {
             }
 
             // Let u0 be a vertex of polygon P, and the vertices are ordered counterclockwise
-            List<Vector2> vertices = new List<Vector2>((List<Vector2>) polygon.Vertices);
+            List<Vector2> vertices = new List<Vector2>(polygon.Vertices.ToList());
             int nextIndex = vertices.IndexOf((Vector2) nextVertex);
             vertices.Insert(nextIndex, (Vector2) u0);
             // Shift the list such that u0 is at the end of the list
@@ -826,7 +835,7 @@ namespace ArtGallery {
                 foreach (var faceID in faceIDs)
                 {
                     // For every convex component c, take one of its vertices z
-                    DCELVertex vertex = ((List<DCELVertex>)faceID.Value.OuterVertices)[0];
+                    DCELVertex vertex = faceID.Value.OuterVertices.ToList()[0];
                     // Compute VP(P, z); weakly visible points of P from z
                     List<Vector2> weakVisiblePoints = computeWeaklyVisiblePointsInPFromZ(LevelPolygon, vertex.Pos);
                     // For every vertex v in VP(P, z), add c to the set of the edge containing v
@@ -841,7 +850,7 @@ namespace ArtGallery {
                         }
                     }
                 }
-                visibleCompIDsPerEdgeID.Add(edgeID.Key, visibleComps);
+                visibleCompIDsPerEdgeID.Add(edgeID.Value, visibleComps);
             }
         }
 
@@ -856,15 +865,15 @@ namespace ArtGallery {
         private int calcNeededNrOfEdgeGuards()
         {
             //// Draw lines through every pair of vertices 
-            //List<Line> lines = generateLines((List<Vector2>) LevelPolygon.Vertices);
+            //List<Line> lines = generateLines(LevelPolygon.Vertices.ToList());
             //// Create convex components 
             //List<LineSegment> lineSegments = generateLineSegments(lines);
             //DCEL dcel = createDCELFromPolygonAndSegments(LevelPolygon, lineSegments);
-            //List<Face> faces = (List<Face>) dcel.InnerFaces;
+            //List<Face> faces = dcel.InnerFaces.ToList();
             //// Give IDs to the faces
             //setFaceIDs(faces);
             //// Give IDs to the edges
-            //setEdgeIDs((List<LineSegment>) LevelPolygon.Segments);
+            setEdgeIDs(LevelPolygon.Segments.ToList());
             //// Store visible convex components(/faces) for each edge by index
             //computeVisibleComponentsPerEdge(dcel);
             //// Calculate the needed number of edge guards
@@ -874,7 +883,6 @@ namespace ArtGallery {
 
         public override void HandleIslandClick()
         {
-
             // obtain mouse position
             var worldlocation = Camera.main.ScreenPointToRay(Input.mousePosition).origin;
             worldlocation.z = -2f;
@@ -925,6 +933,8 @@ namespace ArtGallery {
             // Add closest line segment to lighthouse
             go.GetComponent<ArtGalleryLightHouse>().m_segment = closestSegment;
 
+            go.GetComponent<ArtGalleryLightHouse>().UpdateVision();
+
             // add lighthouse to art gallery solution
             m_solution.AddLighthouse(go);
             UpdateLighthouseText();
@@ -933,6 +943,41 @@ namespace ArtGallery {
             segmentsWithLighthouse.Add(closestSegment, go.GetComponent<ArtGalleryLightHouse>());
 
             CheckSolution();
+        }
+
+        /// <summary>
+        /// Update the vision polygon for the given lighthouse.
+        /// Calculates the visibility polygon.
+        /// </summary>
+        /// <param name="m_lighthouse"></param>
+        public override void UpdateVision(ArtGalleryLightHouse m_lighthouse)
+        {
+            if (LevelPolygon.ContainsInside(m_lighthouse.Pos))
+            {
+                LineSegment selectedEdge = m_lighthouse.m_segment;
+                int edgeID = getEdgeIDByEdge(selectedEdge);
+                HashSet<int> visibleCompIDs = visibleCompIDsPerEdgeID[edgeID];
+                List<Face> faces = new List<Face>();
+                foreach (var id in visibleCompIDs)
+                {
+                    faces.Add(getFaceByID(id));
+                }
+                IEnumerable<Vector2> outerPointsAllFaces = new Vector2[] { };
+                foreach (var face in faces)
+                {
+                    Enumerable.Concat(outerPointsAllFaces, face.OuterPoints);
+                }
+                Polygon2D vision = new Polygon2D(outerPointsAllFaces);
+                // update lighthouse visibility
+                m_lighthouse.VisionPoly = vision;
+                m_lighthouse.VisionAreaMesh.Polygon = vision;
+            }
+            else
+            {
+                // remove visibility polygon from lighthouse
+                m_lighthouse.VisionPoly = null;
+                m_lighthouse.VisionAreaMesh.Polygon = null;
+            }
         }
     }
 }

@@ -165,7 +165,7 @@
         /// Calculates the visibility polygon.
         /// </summary>
         /// <param name="m_lighthouse"></param>
-        public void UpdateVision(ArtGalleryLightHouse m_lighthouse)
+        public virtual void UpdateVision(ArtGalleryLightHouse m_lighthouse)
         {
 
             if (LevelPolygon.ContainsInside(m_lighthouse.Pos))
