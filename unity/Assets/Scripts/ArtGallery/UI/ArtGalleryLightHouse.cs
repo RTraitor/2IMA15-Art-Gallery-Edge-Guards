@@ -50,13 +50,12 @@
         // Use this for initialization
         void Awake()
         {
+            Debug.Log("lighthouse placed on segment: ");
             m_controller = FindObjectOfType<ArtGalleryController>();
 
             // initialize the vision polygon
             GameObject go = Instantiate(m_visionAreaPrefab, new Vector3(0, 0, -1.5f), Quaternion.identity) as GameObject;
             VisionAreaMesh = go.GetComponent<ArtGalleryIsland>();
-
-            m_controller.UpdateVision(this);
         }
 
         void OnDestroy()
@@ -70,6 +69,11 @@
         void OnMouseDown()
         {
             m_controller.SelectLighthouse(this);
+        }
+
+        public void UpdateVision()
+        {
+            m_controller.UpdateVision(this);
         }
     }
 }
