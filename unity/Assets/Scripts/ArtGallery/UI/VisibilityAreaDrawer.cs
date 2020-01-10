@@ -28,7 +28,7 @@
         /// </summary>
         public DCEL VisibilityAreas {
             get { return m_areas; }
-            set { m_areas = value; UpdateDraw(); }
+            set { m_areas = value; }
         }
 
         /// <summary>
@@ -36,7 +36,6 @@
         /// </summary>
         public void ToggleDrawEdges() {
             m_displayEdges = !m_displayEdges;
-            UpdateDraw();
         }
 
         /// <summary>
@@ -44,7 +43,6 @@
         /// </summary>
         public void ToggleDrawVertices() {
             m_displayVertices = !m_displayVertices;
-            UpdateDraw();
         }
 
         /// <summary>
@@ -52,7 +50,6 @@
         /// </summary>
         public void ToggleDrawFaces() {
             m_displayFaces = !m_displayFaces;
-            UpdateDraw();
         }
 
         /// <summary>
@@ -63,29 +60,6 @@
             //UpdateDraw();
             // TODO
         }
-
-        /// <summary>
-        /// Updates the line drawing given the divide solution cut lines and toggles.
-        /// </summary>
-        private void UpdateDraw() {
-            //ClearLines();
-
-            //// draw lines that are enabled by adding lines to LineDrawer
-            //if (m_displayFaces) {
-            //    AddLines(m_solution.Mages, faceColor);
-            //}
-            //if (m_displayEdges) {
-            //    AddLines(m_solution.Archers, edgeColor);
-            //}
-            //if (m_displayVertices) {
-            //    AddLines(m_solution.Spearmen, vertexColor);
-            //}
-            // TODO
-            //if (m_displayAll) {
-            //    AddLines(m_solution.All, AllColor);
-            //}
-        }
-
 
         // Use this for initialization
         void Awake() {
@@ -174,9 +148,15 @@
                 GL.MultMatrix(m_MyTransform.localToWorldMatrix);
 
                 // draw graph components
-                DrawFaces();
-                DrawEdges();
-                DrawVertices();
+                if (m_displayFaces) {
+                    DrawFaces();
+                }
+                if (m_displayEdges) {
+                    DrawEdges();
+                }
+                if (m_displayVertices) {
+                    DrawVertices();
+                }
 
                 GL.PopMatrix();
             }

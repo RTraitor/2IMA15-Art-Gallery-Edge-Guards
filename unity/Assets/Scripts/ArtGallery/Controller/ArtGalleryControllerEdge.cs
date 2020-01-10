@@ -28,7 +28,7 @@ namespace ArtGallery {
                 if (Input.GetKeyDown("a")) {
                     m_areaDrawer.ToggleDrawAll();
                 }
-                if (Input.GetKeyDown("s")) {
+                if (Input.GetKeyDown("e")) {
                     m_areaDrawer.ToggleDrawEdges();
                 }
                 if (Input.GetKeyDown("v")) {
