@@ -13,9 +13,9 @@
         private readonly float VertexRadius = 0.2f;
 
         // Boolean for whether to display certain parts of the DCEL
-        private bool m_displayEdges = false;
-        private bool m_displayVertices = false;
-        private bool m_displayFaces = false;
+        private bool m_displayEdges = true;
+        private bool m_displayVertices = true;
+        private bool m_displayFaces = true;
 
         // solution storing the cut lines
         private DCEL m_areas;

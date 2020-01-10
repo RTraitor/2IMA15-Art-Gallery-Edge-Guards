@@ -42,20 +42,19 @@ namespace ArtGallery {
 
         public override void InitLevel() {
             base.InitLevel();
-            Debug.Log("Initialising Level...");
+            Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
-            Debug.Log(FindObjectOfType<VisibilityAreaDrawer>());
 
-            Debug.Log(LevelPolygon.Segments.ToString());
-            DCEL dcell = new DCEL();
-            foreach (LineSegment s in LevelPolygon.Segments) {
-                Debug.Log("Segment: " + s.ToString());
-                dcell.AddSegment(s);
-            }
-
+            //DCEL dcell = new DCEL();
+            //foreach (LineSegment s in LevelPolygon.Segments) {
+            //    dcell.AddSegment(s);
+            //}
+            DCEL dcell = computeVisibilityRegions(LevelPolygon);
+            //Debug.Log(dcell);
             if (m_areaDrawer != null) {
                 m_areaDrawer.VisibilityAreas = dcell;
             }
+            Debug.Log("Level Drawer Initalised!");
         }
 
         /// <summary>
@@ -67,7 +66,21 @@ namespace ArtGallery {
         /// </returns>
         private DCEL computeVisibilityRegions(Polygon2D poly) {
             ICollection<LineSegment> segments = getVisibilitySegments(poly);
-            return mergeSegments(segments);
+
+            Debug.Log("Number of vertices: " + LevelPolygon.VertexCount);
+            Debug.Log("Number of vertices in Vertices: " + LevelPolygon.Vertices.Count);
+
+            //foreach (Vector2 v in LevelPolygon.Vertices) {
+            //    Debug.Log(v);
+            //}
+
+            DCEL temp = new DCEL();
+            foreach (LineSegment s in segments) {
+                temp.AddSegment(s);
+                //Debug.Log(s);
+            }
+
+            return temp; //mergeSegments(segments);
         }
 
         /// <summary>
@@ -124,16 +137,24 @@ namespace ArtGallery {
         private Vector2? intersectPolygonClosest(Polygon2D poly, Line l) {
             LineSegment smallestSegment = null;
             foreach (LineSegment s in poly.Segments) {
-                // Ignore the segments that the ray starts in (if any)
-                if (s.IsOnSegment(l.Point2)) {
-                    continue;
-                }
-
                 // Will contain the intersection of l and s (if any)
                 Vector2? intersection = null;
 
-                // Edge Case: Handle segments that completely overlap the given line
+                // Ignore segments that the ray starts in (if any)
+                if (s.IsOnSegment(l.Point2)) {
+                    // Exception: if a segment starts in l2 and is on the line, there is no intersection
+                    if (Line.Colinear(l.Point1, s.Point1, s.Point2)
+                            && !(l.Point1 == s.Point1 || l.Point1 == s.Point2)) {
+                        return null;
+                    }
+
+                    continue;
+                }
+
+                // Edge Case: Handle segments that completely overlap the given line (I.e. there are 
+                // infinitely many intersections)
                 if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2)) {
+                    Debug.Log("xyzSegment overlaps line (" + l + "): " + s.Point1 + " | " + s.Point2);
                     // All points of the segment overlap!
                     if ((new LineSegment(l.Point2, s.Point1)).IsOnSegment(s.Point2)) {
                         // Endpoint of the segment is closer
@@ -142,6 +163,8 @@ namespace ArtGallery {
                         // Beginpoint of the segment is closer
                         intersection = s.Point1;
                     }
+                //} else if (s.IsOnSegment(l.Point2)) {
+                //    continue;
                 } else {
                     // A single point of the segment can overlap
                     intersection = s.Intersect(l);
@@ -149,7 +172,7 @@ namespace ArtGallery {
 
                 // Ignore intersections on the 'wrong' side
                 // TODO: optimize this(?); ignore segments on one side of the line perpendicular to l
-                if (intersection != null && (new LineSegment(l.Point1, (Vector2) intersection)).IsOnSegment(l.Point2)) {
+                if (intersection != null && (new LineSegment(l.Point2, (Vector2) intersection)).IsOnSegment(l.Point1)) {
                     continue;
                 }
 
@@ -158,7 +181,8 @@ namespace ArtGallery {
                     smallestSegment = new LineSegment(l.Point2, (Vector2) intersection);
                 }
             }
-            if (smallestSegment != null) {
+            
+            if (smallestSegment != null && !smallestSegment.Point2.Equals(l.Point2)) {
                 return smallestSegment.Point2;
             }
             return null;
