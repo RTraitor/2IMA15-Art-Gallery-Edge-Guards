@@ -19,28 +19,33 @@ namespace ArtGallery {
         private Dictionary<int, HashSet<int>> visibleCompIDsPerEdgeID = new Dictionary<int, HashSet<int>>();
 
         //Unity references
-        private VisibilityAreaDrawer m_areaDrawer;
+        private VisibilityAreaDrawer m_areaDrawer = null;
 
         // Update is called once per frame COULD GIVE PROBLEMS - TEST NECESSARY
         void Update() {
             //handle input key presses
-            if (Input.GetKeyDown("a")) {
-                m_areaDrawer.ToggleDrawAll();
-            }
-            if (Input.GetKeyDown("s")) {
-                m_areaDrawer.ToggleDrawEdges();
-            }
-            if (Input.GetKeyDown("v")) {
-                m_areaDrawer.ToggleDrawVertices();
-            }
-            if (Input.GetKeyDown("f")) {
-                m_areaDrawer.ToggleDrawFaces();
+            if (m_areaDrawer != null) {
+                if (Input.GetKeyDown("a")) {
+                    m_areaDrawer.ToggleDrawAll();
+                }
+                if (Input.GetKeyDown("s")) {
+                    m_areaDrawer.ToggleDrawEdges();
+                }
+                if (Input.GetKeyDown("v")) {
+                    m_areaDrawer.ToggleDrawVertices();
+                }
+                if (Input.GetKeyDown("f")) {
+                    m_areaDrawer.ToggleDrawFaces();
+                }
             }
         }
 
         public override void InitLevel() {
             base.InitLevel();
             Debug.Log("Initialising Level...");
+            m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
+            Debug.Log(FindObjectOfType<VisibilityAreaDrawer>());
+
             Debug.Log(LevelPolygon.Segments.ToString());
             DCEL dcell = new DCEL();
             foreach (LineSegment s in LevelPolygon.Segments) {
@@ -48,7 +53,9 @@ namespace ArtGallery {
                 dcell.AddSegment(s);
             }
 
-            m_areaDrawer.VisibilityAreas = dcell;
+            if (m_areaDrawer != null) {
+                m_areaDrawer.VisibilityAreas = dcell;
+            }
         }
 
         /// <summary>

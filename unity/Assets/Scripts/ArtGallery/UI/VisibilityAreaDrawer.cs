@@ -7,9 +7,9 @@
 
     class VisibilityAreaDrawer : MonoBehaviour {
         // line colors for cut lines
-        private readonly Color edgeColor = Color.red; //new Color(102f/255, 194f/255, 165f/255);
-        private readonly Color vertexColor = Color.blue; //new Color(141f/255, 160f/255, 203f/255);
-        private readonly Color faceColor = Color.green; //new Color(252f/255, 141f/255, 98f/255);
+        private readonly Color edgeColor = new Color(252f / 255, 141f / 255, 98f / 255, 1f); // Red
+        private readonly Color vertexColor = new Color(141f/255, 160f/255, 203f/255, 1f); // Blue
+        private readonly Color faceColor = new Color(102f / 255, 194f / 255, 165f / 255, 0.7f); // Green
         private readonly float VertexRadius = 0.2f;
 
         // Boolean for whether to display certain parts of the DCEL
