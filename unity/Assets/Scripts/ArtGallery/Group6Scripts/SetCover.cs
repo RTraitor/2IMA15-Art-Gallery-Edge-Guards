@@ -80,7 +80,7 @@ namespace Main
         /// (U, F, delta), where U and F are "irreducible" and
         /// delta is the number of sets that must be included
         /// </returns>
-        private static Tuple<HashSet<int>, Dictionary<int, HashSet<int>>, int> Reduce(HashSet<int> U, Dictionary<int, HashSet<int>> F)
+        private static Tuple<HashSet<int>, Dictionary<int, HashSet<int>>, List<int>> Reduce(HashSet<int> U, Dictionary<int, HashSet<int>> F)
         {
             var FaceSets = new Dictionary<int, HashSet<int>>();
             foreach (var key in F.Keys)
@@ -106,7 +106,7 @@ namespace Main
 
             // whether the solution changed this iteration
             var changed = true;
-            var delta = 0;
+            var delta = new List<int>();
             do
             {
                 changed = false;
@@ -142,7 +142,7 @@ namespace Main
                     var coveredEdges = new HashSet<int>();
                     foreach (var face in isolated)
                     {
-                        delta += 1;
+                        delta.Add(face);
                         var ids = FaceSets[face];
                         // only executed once...
                         foreach (var id in ids)
@@ -312,8 +312,9 @@ namespace Main
         /// <param name="U">The universe</param>
         /// <param name="F">The familiy of subsets</param>
         /// <returns>The optimal solution of the instance (U, F)</returns>
-        private static int ExactSetCover(HashSet<int> U, Dictionary<int, HashSet<int>> F)
+        private static List<int> ExactSetCover(HashSet<int> U, Dictionary<int, HashSet<int>> F)
         {
+            var result = new List<int>();
             // Linear search, could be improved to binary search
             for (int k = 1; k <= F.Count(); k++)
             {
@@ -331,7 +332,7 @@ namespace Main
                     // compute union of selected sets
                     for (var i = 0; i < k; i++)
                     {
-                        foreach (var item in F.ElementAt(i).Value)
+                        foreach (var item in F.ElementAt(tuple[i]).Value)
                         {
                             S.Add(item);
                         }
@@ -340,12 +341,16 @@ namespace Main
                     // Check if the sets are equal
                     if (S.SetEquals(U))
                     {
-                        return k;
+                        for (int i = 0; i < k; i++)
+                        {
+                            result.Add(tuple[i]);
+                        }
+                        return result;
                     }
                 }
             }
             // unreachable as there is always a solution, namely all edges.
-            return -1;
+            return result;
         }
 
         /// <summary>
@@ -353,29 +358,34 @@ namespace Main
         /// </summary>
         /// <param name="U">The universe</param>
         /// <param name="F">The family of subsets</param>
-        /// <returns>The size of a possible solution of (U, F)</returns>
-        private static int GreedySetCover(HashSet<int> U, Dictionary<int, HashSet<int>> F)
+        /// <returns>The selected sets by id that are a solution</returns>
+        private static List<int> GreedySetCover(HashSet<int> U, Dictionary<int, HashSet<int>> F)
         {
-            var result = 0;
+            var result = new List<int>();
             var listF = F.ToList();
 
-            listF.Sort(new SetSizeComparer());
 
             while (U.Count != 0)
             {
-                result++;
-                var max = listF[0];
+                var maxSize = 0;
+                var max = new KeyValuePair<int, HashSet<int>>();
+                foreach (var pair in F)
+                {
+                    if (pair.Value.Count() > maxSize)
+                    {
+                        maxSize = pair.Value.Count;
+                        max = pair;
+                    }
+                }
 
+                result.Add(max.Key);
+                
                 // safe set subtraction
                 U.ExceptWith(max.Value);
                 foreach (var pair in F)
                 {
                     pair.Value.ExceptWith(max.Value);
                 }
-
-                // absence of heap in C#...
-                listF = F.ToList();
-                listF.Sort(new SetSizeComparer());
             }
             return result;
         }
@@ -389,31 +399,34 @@ namespace Main
         /// The size of a solution of the instance (U, F), optimal or 
         /// estimate.
         /// </returns>
-        public static int Solve(HashSet<int> U, Dictionary<int, HashSet<int>> F)
+        public static List<int> Solve(HashSet<int> U, Dictionary<int, HashSet<int>> F)
         {
-            // first reduce, then solve exactly or greedily
-            var t = Reduce(U, F);
-            U = t.Item1;
-            F = t.Item2;
-            var delta = t.Item3;
+            // check if input is within bounds
+            if (F.Count <= 25 && U.Count <= 500)
+            {
+                // reduce it
+                var t = Reduce(U, F);
+                U = t.Item1;
+                F = t.Item2;
+                var delta = t.Item3;
 
-            if (U.Count() == 0)
-            {
-                // HYPE DAB 
-                // Instance was solvable in polynomial time 
-                return delta;
-            }
-            else
-            {
-                // arbitrary bounds
-                if (F.Count() <= 25 && U.Count <= 500)
+                if (U.Count == 0)
                 {
-                    return delta + ExactSetCover(U, F);
+                    return delta;
                 }
                 else
                 {
-                    return delta + GreedySetCover(U, F);
+                    var result = ExactSetCover(U, F);
+                    foreach (var id in result)
+                    {
+                        delta.Add(id);
+                    }
+                    return delta;
                 }
+            }
+            else
+            {
+                return GreedySetCover(U, F);
             }
         }
     }
