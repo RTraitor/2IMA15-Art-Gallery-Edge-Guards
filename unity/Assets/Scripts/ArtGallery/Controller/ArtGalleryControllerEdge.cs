@@ -93,18 +93,30 @@ namespace ArtGallery
             Debug.Log("Number of vertices: " + LevelPolygon.VertexCount);
             Debug.Log("Number of vertices in Vertices: " + LevelPolygon.Vertices.Count);
 
-            //foreach (Vector2 v in LevelPolygon.Vertices) {
-            //    Debug.Log(v);
-            //}
-
             DCEL temp = new DCEL();
-            foreach (LineSegment s in segments)
-            {
-                temp.AddSegment(s);
-                //Debug.Log(s);
+
+            foreach (LineSegment l in poly.Segments) {
+                segments.Add(l);                
             }
 
-            return temp; //mergeSegments(segments);
+            ICollection<MultiLineSegment> mergedSegments = mergeSegments(segments);
+            int count = 0;
+            foreach (MultiLineSegment s in mergedSegments) {
+                foreach (LineSegment l in s.Segments()) {
+                    Debug.Log(l);
+                    //try {
+                        temp.AddSegment(l);
+                    //} catch (Exception e) {
+                    //    Debug.Log(e);
+                    //}
+                }
+                Debug.Log(s);
+                count++;
+                if (count == 6) {
+                    break;
+                }
+            }
+            return temp;
         }
 
         /// <summary>
@@ -182,15 +194,12 @@ namespace ArtGallery
                     {
                         return null;
                     }
-
                     continue;
                 }
 
                 // Edge Case: Handle segments that completely overlap the given line (I.e. there are 
                 // infinitely many intersections)
-                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2))
-                {
-                    Debug.Log("xyzSegment overlaps line (" + l + "): " + s.Point1 + " | " + s.Point2);
+                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2)) {
                     // All points of the segment overlap!
                     if ((new LineSegment(l.Point2, s.Point1)).IsOnSegment(s.Point2))
                     {
@@ -202,11 +211,7 @@ namespace ArtGallery
                         // Beginpoint of the segment is closer
                         intersection = s.Point1;
                     }
-                    //} else if (s.IsOnSegment(l.Point2)) {
-                    //    continue;
-                }
-                else
-                {
+                } else {
                     // A single point of the segment can overlap
                     intersection = s.Intersect(l);
                 }
@@ -276,18 +281,14 @@ namespace ArtGallery
         /// intersections are transformed to DCEL edges.
         /// </summary>
         /// <param name="segments">A list of line segments</param>
+        /// <remarks>ASSUMPTION: Every pair of line segments has at most 1 intersection</remarks>
         /// <returns>
-        /// A DCEL created from the given list of segments
+        /// A DCEL created from the given list of segments TODO update
         /// </returns>
-        private DCEL mergeSegments(ICollection<LineSegment> segments)
-        {
-
-            List<LineSegment> lineSegments = new List<LineSegment>();
+        private ICollection<MultiLineSegment> mergeSegments(ICollection<MultiLineSegment> segments) {
             // For each pair of segments
-            foreach (LineSegment s1 in segments)
-            {
-                foreach (LineSegment s2 in segments)
-                {
+            foreach (MultiLineSegment s1 in segments) {
+                foreach (MultiLineSegment s2 in segments) {
                     // Segments must not be the same
                     if (!s1.Equals(s2))
                     {
@@ -296,26 +297,23 @@ namespace ArtGallery
                         // TODO: Handle multiple intersections in the same linesegment
 
                         // If the segments intersect, create a new vertex at the intersecion and split the segments
-                        if (intersection != null)
-                        {
-                            lineSegments.Add(new LineSegment(s1.Point1, (Vector2)intersection));
-                            lineSegments.Add(new LineSegment(s1.Point2, (Vector2)intersection));
-                            lineSegments.Add(new LineSegment(s2.Point1, (Vector2)intersection));
-                            lineSegments.Add(new LineSegment(s2.Point2, (Vector2)intersection));
+                        if (intersection != null) {
+                            s1.AddPoint((Vector2) intersection);
+                            s2.AddPoint((Vector2) intersection);
                         }
                     }
                 }
             }
+            return segments;
+        }
 
-            // Create the DCEL
-            DCEL dcel = new DCEL();
-
-            // Add the segments to the DCEL
-            foreach (LineSegment segment in lineSegments)
-            {
-                dcel.AddSegment(segment);
+        private ICollection<MultiLineSegment> mergeSegments(ICollection<LineSegment> segments) {
+            List<MultiLineSegment> segs = new List<MultiLineSegment>();
+            // Convert the LineSegments to MultiLineSegments
+            foreach (LineSegment l in segments) {
+                segs.Add(new MultiLineSegment(l));
             }
-            return dcel;
+            return mergeSegments(segs);
         }
 
         /// <summary>
