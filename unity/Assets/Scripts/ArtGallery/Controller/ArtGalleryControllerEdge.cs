@@ -48,9 +48,19 @@ namespace ArtGallery
             }
         }
 
+        private void RefreshVariables()
+        {
+            segmentsWithLighthouse = new Dictionary<LineSegment, ArtGalleryLightHouse>();
+            faceIDs = new Dictionary<int, Face>();
+            edgeIDs = new Dictionary<LineSegment, int>();
+            visibleCompIDsPerEdgeID = new Dictionary<int, HashSet<int>>();
+            m_areaDrawer = null;
+        }
+
         public override void InitLevel()
         {
             base.InitLevel();
+            RefreshVariables();
             Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
 
@@ -463,7 +473,7 @@ namespace ArtGallery
                     indexPrev = vertices.Count - 1;
                 }
                 LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]);
-                
+
                 Ray2D halfLine = new Ray2D(visiblePoints.Peek(), RotatePoint(z, visiblePoints.Peek(), 180));
                 Vector2? v = segment.Intersect(halfLine);
                 //If the x-axis intersection count is even and the intersection is not the origin of the ray
@@ -546,9 +556,9 @@ namespace ArtGallery
                 if (v != null)
                 {
                     // Remaining steps identical to region 3 where s_(j-1) is v
-                    Vector2 topOfStack = visiblePoints.Pop(); 
+                    Vector2 topOfStack = visiblePoints.Pop();
                     visiblePoints.Pop(); // We remove the element previously at s_(j-1). otherwise C5 in the example would contain v2
-                    visiblePoints.Push((Vector2)v); 
+                    visiblePoints.Push((Vector2)v);
                     visiblePoints.Push(topOfStack);
                     nextElement = index; // We update the index, otherwise v_3 would be in C5 instead of v_4
                     break;
@@ -1029,16 +1039,16 @@ namespace ArtGallery
                     {
                         faces.Add(getFaceByID(id));
                     }
-                
+
                     List<Vector2> outerPointsAllFaces = new List<Vector2>();
                     foreach (var face in faces)
                     {
-                        foreach (var point in face.OuterPoints) 
+                        foreach (var point in face.OuterPoints)
                         {
                             outerPointsAllFaces.Add(point);
                         }
                     }
-                    
+
                     Polygon2D vision = new Polygon2D(outerPointsAllFaces);
                     // update lighthouse visibility
                     m_lighthouse.VisionPoly = vision;
