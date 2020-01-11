@@ -91,33 +91,25 @@ namespace ArtGallery
             Debug.Log("Number of vertices: " + LevelPolygon.VertexCount);
             Debug.Log("Number of vertices in Vertices: " + LevelPolygon.Vertices.Count);
 
-            DCEL temp = new DCEL();
-
-            foreach (LineSegment l in poly.Segments)
-            {
-                segments.Add(l);
-            }
-
             ICollection<MultiLineSegment> mergedSegments = mergeSegments(segments);
-            int count = 0;
-            foreach (MultiLineSegment s in mergedSegments)
+            DCEL temp = new DCEL();
+            Debug.Log(temp.ToString());
+            //Debug.Log("It fails at segment: " + mergedSegments.ElementAt(10));
+            foreach (var segment in LevelPolygon.Segments)
             {
-                foreach (LineSegment l in s.Segments())
-                {
-                    Debug.Log(l);
-                    //try {
-                    temp.AddSegment(l);
-                    //} catch (Exception e) {
-                    //    Debug.Log(e);
-                    //}
-                }
-                Debug.Log(s);
-                count++;
-                if (count == 6)
-                {
-                    break;
-                }
+                temp.AddSegment(segment);
             }
+            foreach (var segment in mergedSegments)
+            {
+                temp.AddSegment(segment);
+            }
+            foreach (var face in temp.Faces)
+            {
+                Debug.Log("Faces: " + face.ToString());
+            }
+            Debug.Log("mergedSegments.Count: " + mergedSegments.Count);
+            
+            
             return temp;
         }
 
