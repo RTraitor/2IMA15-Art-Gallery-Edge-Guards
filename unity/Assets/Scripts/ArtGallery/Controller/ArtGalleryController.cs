@@ -88,7 +88,7 @@
             }
         }
 
-        public void InitLevel()
+        public virtual void InitLevel()
         {
             // clear old level
             m_solution.Clear();
@@ -165,7 +165,7 @@
         /// Calculates the visibility polygon.
         /// </summary>
         /// <param name="m_lighthouse"></param>
-        public void UpdateVision(ArtGalleryLightHouse m_lighthouse)
+        public virtual void UpdateVision(ArtGalleryLightHouse m_lighthouse)
         {
 
             if (LevelPolygon.ContainsInside(m_lighthouse.Pos))

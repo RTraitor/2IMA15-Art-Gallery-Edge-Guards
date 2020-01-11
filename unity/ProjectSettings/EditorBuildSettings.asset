@@ -32,4 +32,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/ArtGallery/Scenes/agMenuEdge.unity
     guid: 1f79d884e72b48043bbef7d9ec99112b
+  - enabled: 1
+    path: Assets/ArtGallery/Scenes/agControlsEdge.unity
+    guid: da5521324f676f2458052e4fb50667cc
+  - enabled: 1
+    path: Assets/ArtGallery/Scenes/agExplanationEdge.unity
+    guid: 161f352eee1ec4348aea0f5d2542f03a
   m_configObjects: {}

@@ -680,7 +680,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 11418384, guid: 1115d4335193dd643963c561dd1f1b1d, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_StringArgument
-      value: agControls
+      value: agControlsEdge
       objectReference: {fileID: 0}
     - target: {fileID: 11426352, guid: 1115d4335193dd643963c561dd1f1b1d, type: 3}
       propertyPath: m_Text
@@ -946,7 +946,7 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: agExplanation
+          m_StringArgument: agExplanationEdge
           m_BoolArgument: 0
         m_CallState: 1
 --- !u!114 &1214223200
