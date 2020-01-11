@@ -213,7 +213,9 @@ PrefabInstance:
         art gallery will be covered!\n\nNote: Guards can look around the corners of
         a wall they patrol!\n\r\nControls:\r\n- To assign a guard to a wall, click
         near an edge inside the polygon\n- To unassign a guard from a wall, again
-        click near that edge inside the polygon"
+        click near that edge inside the polygon\n- To toggle display of the visibility
+        areas, press <V> to toggle the vertices, <E> to toggle the edges, and <F>
+        to toggle the faces."
       objectReference: {fileID: 0}
     - target: {fileID: 11497240, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
       propertyPath: m_FontData.m_Font
