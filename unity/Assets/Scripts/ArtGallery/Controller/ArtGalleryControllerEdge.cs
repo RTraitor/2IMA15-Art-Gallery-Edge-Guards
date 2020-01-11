@@ -989,11 +989,16 @@ namespace ArtGallery
                     {
                         faces.Add(getFaceByID(id));
                     }
-                    IEnumerable<Vector2> outerPointsAllFaces = new Vector2[] { };
+                
+                    List<Vector2> outerPointsAllFaces = new List<Vector2>();
                     foreach (var face in faces)
                     {
-                        Enumerable.Concat(outerPointsAllFaces, face.OuterPoints);
+                        foreach (var point in face.OuterPoints) 
+                        {
+                            outerPointsAllFaces.Add(point);
+                        }
                     }
+                    
                     Polygon2D vision = new Polygon2D(outerPointsAllFaces);
                     // update lighthouse visibility
                     m_lighthouse.VisionPoly = vision;
