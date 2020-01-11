@@ -46,9 +46,19 @@ namespace ArtGallery
             }
         }
 
+        private void RefreshVariables()
+        {
+            segmentsWithLighthouse = new Dictionary<LineSegment, ArtGalleryLightHouse>();
+            faceIDs = new Dictionary<int, Face>();
+            edgeIDs = new Dictionary<LineSegment, int>();
+            visibleCompIDsPerEdgeID = new Dictionary<int, HashSet<int>>();
+            m_areaDrawer = null;
+        }
+
         public override void InitLevel()
         {
             base.InitLevel();
+            RefreshVariables();
             Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
 
@@ -81,18 +91,30 @@ namespace ArtGallery
             Debug.Log("Number of vertices: " + LevelPolygon.VertexCount);
             Debug.Log("Number of vertices in Vertices: " + LevelPolygon.Vertices.Count);
 
-            //foreach (Vector2 v in LevelPolygon.Vertices) {
-            //    Debug.Log(v);
-            //}
-
             DCEL temp = new DCEL();
-            foreach (LineSegment s in segments)
-            {
-                temp.AddSegment(s);
-                //Debug.Log(s);
+
+            foreach (LineSegment l in poly.Segments) {
+                segments.Add(l);                
             }
 
-            return temp; //mergeSegments(segments);
+            ICollection<MultiLineSegment> mergedSegments = mergeSegments(segments);
+            int count = 0;
+            foreach (MultiLineSegment s in mergedSegments) {
+                foreach (LineSegment l in s.Segments()) {
+                    Debug.Log(l);
+                    //try {
+                        temp.AddSegment(l);
+                    //} catch (Exception e) {
+                    //    Debug.Log(e);
+                    //}
+                }
+                Debug.Log(s);
+                count++;
+                if (count == 6) {
+                    break;
+                }
+            }
+            return temp;
         }
 
         /// <summary>
@@ -170,15 +192,12 @@ namespace ArtGallery
                     {
                         return null;
                     }
-
                     continue;
                 }
 
                 // Edge Case: Handle segments that completely overlap the given line (I.e. there are 
                 // infinitely many intersections)
-                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2))
-                {
-                    Debug.Log("xyzSegment overlaps line (" + l + "): " + s.Point1 + " | " + s.Point2);
+                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2)) {
                     // All points of the segment overlap!
                     if ((new LineSegment(l.Point2, s.Point1)).IsOnSegment(s.Point2))
                     {
@@ -190,11 +209,7 @@ namespace ArtGallery
                         // Beginpoint of the segment is closer
                         intersection = s.Point1;
                     }
-                    //} else if (s.IsOnSegment(l.Point2)) {
-                    //    continue;
-                }
-                else
-                {
+                } else {
                     // A single point of the segment can overlap
                     intersection = s.Intersect(l);
                 }
@@ -264,18 +279,14 @@ namespace ArtGallery
         /// intersections are transformed to DCEL edges.
         /// </summary>
         /// <param name="segments">A list of line segments</param>
+        /// <remarks>ASSUMPTION: Every pair of line segments has at most 1 intersection</remarks>
         /// <returns>
-        /// A DCEL created from the given list of segments
+        /// A DCEL created from the given list of segments TODO update
         /// </returns>
-        private DCEL mergeSegments(ICollection<LineSegment> segments)
-        {
-
-            List<LineSegment> lineSegments = new List<LineSegment>();
+        private ICollection<MultiLineSegment> mergeSegments(ICollection<MultiLineSegment> segments) {
             // For each pair of segments
-            foreach (LineSegment s1 in segments)
-            {
-                foreach (LineSegment s2 in segments)
-                {
+            foreach (MultiLineSegment s1 in segments) {
+                foreach (MultiLineSegment s2 in segments) {
                     // Segments must not be the same
                     if (!s1.Equals(s2))
                     {
@@ -284,26 +295,23 @@ namespace ArtGallery
                         // TODO: Handle multiple intersections in the same linesegment
 
                         // If the segments intersect, create a new vertex at the intersecion and split the segments
-                        if (intersection != null)
-                        {
-                            lineSegments.Add(new LineSegment(s1.Point1, (Vector2)intersection));
-                            lineSegments.Add(new LineSegment(s1.Point2, (Vector2)intersection));
-                            lineSegments.Add(new LineSegment(s2.Point1, (Vector2)intersection));
-                            lineSegments.Add(new LineSegment(s2.Point2, (Vector2)intersection));
+                        if (intersection != null) {
+                            s1.AddPoint((Vector2) intersection);
+                            s2.AddPoint((Vector2) intersection);
                         }
                     }
                 }
             }
+            return segments;
+        }
 
-            // Create the DCEL
-            DCEL dcel = new DCEL();
-
-            // Add the segments to the DCEL
-            foreach (LineSegment segment in lineSegments)
-            {
-                dcel.AddSegment(segment);
+        private ICollection<MultiLineSegment> mergeSegments(ICollection<LineSegment> segments) {
+            List<MultiLineSegment> segs = new List<MultiLineSegment>();
+            // Convert the LineSegments to MultiLineSegments
+            foreach (LineSegment l in segments) {
+                segs.Add(new MultiLineSegment(l));
             }
-            return dcel;
+            return mergeSegments(segs);
         }
 
         /// <summary>
@@ -462,7 +470,7 @@ namespace ArtGallery
                     indexPrev = vertices.Count - 1;
                 }
                 LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]);
-                
+
                 Ray2D halfLine = new Ray2D(visiblePoints.Peek(), RotatePoint(z, visiblePoints.Peek(), 180));
                 Vector2? v = segment.Intersect(halfLine);
                 //If the x-axis intersection count is even and the intersection is not the origin of the ray
@@ -545,9 +553,9 @@ namespace ArtGallery
                 if (v != null)
                 {
                     // Remaining steps identical to region 3 where s_(j-1) is v
-                    Vector2 topOfStack = visiblePoints.Pop(); 
+                    Vector2 topOfStack = visiblePoints.Pop();
                     visiblePoints.Pop(); // We remove the element previously at s_(j-1). otherwise C5 in the example would contain v2
-                    visiblePoints.Push((Vector2)v); 
+                    visiblePoints.Push((Vector2)v);
                     visiblePoints.Push(topOfStack);
                     nextElement = index; // We update the index, otherwise v_3 would be in C5 instead of v_4
                     break;
@@ -1028,16 +1036,16 @@ namespace ArtGallery
                     {
                         faces.Add(getFaceByID(id));
                     }
-                
+
                     List<Vector2> outerPointsAllFaces = new List<Vector2>();
                     foreach (var face in faces)
                     {
-                        foreach (var point in face.OuterPoints) 
+                        foreach (var point in face.OuterPoints)
                         {
                             outerPointsAllFaces.Add(point);
                         }
                     }
-                    
+
                     Polygon2D vision = new Polygon2D(outerPointsAllFaces);
                     // update lighthouse visibility
                     m_lighthouse.VisionPoly = vision;
