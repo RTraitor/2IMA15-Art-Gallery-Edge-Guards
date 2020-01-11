@@ -1,4 +1,5 @@
-namespace ArtGallery {
+namespace ArtGallery
+{
 
     using System.Collections.Generic;
     using UnityEngine;
@@ -23,25 +24,32 @@ namespace ArtGallery {
         private VisibilityAreaDrawer m_areaDrawer = null;
 
         // Update is called once per frame COULD GIVE PROBLEMS - TEST NECESSARY
-        void Update() {
+        void Update()
+        {
             //handle input key presses
-            if (m_areaDrawer != null) {
-                if (Input.GetKeyDown("a")) {
+            if (m_areaDrawer != null)
+            {
+                if (Input.GetKeyDown("a"))
+                {
                     m_areaDrawer.ToggleDrawAll();
                 }
-                if (Input.GetKeyDown("e")) {
+                if (Input.GetKeyDown("e"))
+                {
                     m_areaDrawer.ToggleDrawEdges();
                 }
-                if (Input.GetKeyDown("v")) {
+                if (Input.GetKeyDown("v"))
+                {
                     m_areaDrawer.ToggleDrawVertices();
                 }
-                if (Input.GetKeyDown("f")) {
+                if (Input.GetKeyDown("f"))
+                {
                     m_areaDrawer.ToggleDrawFaces();
                 }
             }
         }
 
-        public override void InitLevel() {
+        public override void InitLevel()
+        {
             base.InitLevel();
             Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
@@ -52,7 +60,8 @@ namespace ArtGallery {
             //}
             DCEL dcell = computeVisibilityRegions(LevelPolygon);
             //Debug.Log(dcell);
-            if (m_areaDrawer != null) {
+            if (m_areaDrawer != null)
+            {
                 m_areaDrawer.VisibilityAreas = dcell;
             }
             Debug.Log("Level Drawer Initalised!");
@@ -67,7 +76,8 @@ namespace ArtGallery {
         /// <returns>
         /// A DCEL containing the visibility regions of a polygon
         /// </returns>
-        private DCEL computeVisibilityRegions(Polygon2D poly) {
+        private DCEL computeVisibilityRegions(Polygon2D poly)
+        {
             ICollection<LineSegment> segments = getVisibilitySegments(poly);
 
             Debug.Log("Number of vertices: " + LevelPolygon.VertexCount);
@@ -78,7 +88,8 @@ namespace ArtGallery {
             //}
 
             DCEL temp = new DCEL();
-            foreach (LineSegment s in segments) {
+            foreach (LineSegment s in segments)
+            {
                 temp.AddSegment(s);
                 //Debug.Log(s);
             }
@@ -93,19 +104,25 @@ namespace ArtGallery {
         /// <returns>
         /// The (overlapping) Line Segments that are needed to compute the given polygon's visbility regions
         /// </returns>
-        private ICollection<LineSegment> getVisibilitySegments(Polygon2D poly) {
+        private ICollection<LineSegment> getVisibilitySegments(Polygon2D poly)
+        {
             LinkedList<LineSegment> segments = new LinkedList<LineSegment>();
-            
-            foreach (Vector2 v in poly.Vertices) {
-                foreach (Vector2 v2 in poly.Vertices) {
-                    if (v.Equals(v2)) {
+
+            foreach (Vector2 v in poly.Vertices)
+            {
+                foreach (Vector2 v2 in poly.Vertices)
+                {
+                    if (v.Equals(v2))
+                    {
                         continue;
                     }
 
-                    if (poly.isConvex(v2) == false) { // v2 is Reflex
+                    if (poly.isConvex(v2) == false)
+                    { // v2 is Reflex
 
                         LineSegment s = new LineSegment(v, v2);
-                        if (isIntersectPolygon(poly, s)) {
+                        if (isIntersectPolygon(poly, s))
+                        {
                             // Skip if the two vertices cannot see each other.
                             // NOTE: This includes colinear points (meaning that only 'adjacent' colinear points are not skipped)
                             continue;
@@ -113,10 +130,11 @@ namespace ArtGallery {
 
                         Vector2? closestIntersection = intersectPolygonClosest(poly, new Line(v, v2));
 
-                        if (closestIntersection != null) {
-                            segments.AddFirst(new LineSegment(v2, (Vector2) closestIntersection));
+                        if (closestIntersection != null)
+                        {
+                            segments.AddFirst(new LineSegment(v2, (Vector2)closestIntersection));
                         }
-                        
+
                     }
                 }
             }
@@ -137,17 +155,21 @@ namespace ArtGallery {
         // Finds the closest proper intersection
         // l.p1 is vertex
         // l.p2 is concave vertex
-        private Vector2? intersectPolygonClosest(Polygon2D poly, Line l) {
+        private Vector2? intersectPolygonClosest(Polygon2D poly, Line l)
+        {
             LineSegment smallestSegment = null;
-            foreach (LineSegment s in poly.Segments) {
+            foreach (LineSegment s in poly.Segments)
+            {
                 // Will contain the intersection of l and s (if any)
                 Vector2? intersection = null;
 
                 // Ignore segments that the ray starts in (if any)
-                if (s.IsOnSegment(l.Point2)) {
+                if (s.IsOnSegment(l.Point2))
+                {
                     // Exception: if a segment starts in l2 and is on the line, there is no intersection
                     if (Line.Colinear(l.Point1, s.Point1, s.Point2)
-                            && !(l.Point1 == s.Point1 || l.Point1 == s.Point2)) {
+                            && !(l.Point1 == s.Point1 || l.Point1 == s.Point2))
+                    {
                         return null;
                     }
 
@@ -156,36 +178,45 @@ namespace ArtGallery {
 
                 // Edge Case: Handle segments that completely overlap the given line (I.e. there are 
                 // infinitely many intersections)
-                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2)) {
+                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2))
+                {
                     Debug.Log("xyzSegment overlaps line (" + l + "): " + s.Point1 + " | " + s.Point2);
                     // All points of the segment overlap!
-                    if ((new LineSegment(l.Point2, s.Point1)).IsOnSegment(s.Point2)) {
+                    if ((new LineSegment(l.Point2, s.Point1)).IsOnSegment(s.Point2))
+                    {
                         // Endpoint of the segment is closer
                         intersection = s.Point2;
-                    } else if ((new LineSegment(l.Point2, s.Point2)).IsOnSegment(s.Point1)) {
+                    }
+                    else if ((new LineSegment(l.Point2, s.Point2)).IsOnSegment(s.Point1))
+                    {
                         // Beginpoint of the segment is closer
                         intersection = s.Point1;
                     }
-                //} else if (s.IsOnSegment(l.Point2)) {
-                //    continue;
-                } else {
+                    //} else if (s.IsOnSegment(l.Point2)) {
+                    //    continue;
+                }
+                else
+                {
                     // A single point of the segment can overlap
                     intersection = s.Intersect(l);
                 }
 
                 // Ignore intersections on the 'wrong' side
                 // TODO: optimize this(?); ignore segments on one side of the line perpendicular to l
-                if (intersection != null && (new LineSegment(l.Point2, (Vector2) intersection)).IsOnSegment(l.Point1)) {
+                if (intersection != null && (new LineSegment(l.Point2, (Vector2)intersection)).IsOnSegment(l.Point1))
+                {
                     continue;
                 }
 
                 // There is an intersection, and it was closer than the previous closest intersection
-                if (intersection != null && (smallestSegment == null || smallestSegment.IsOnSegment((Vector2) intersection))) {
-                    smallestSegment = new LineSegment(l.Point2, (Vector2) intersection);
+                if (intersection != null && (smallestSegment == null || smallestSegment.IsOnSegment((Vector2)intersection)))
+                {
+                    smallestSegment = new LineSegment(l.Point2, (Vector2)intersection);
                 }
             }
-            
-            if (smallestSegment != null && !smallestSegment.Point2.Equals(l.Point2)) {
+
+            if (smallestSegment != null && !smallestSegment.Point2.Equals(l.Point2))
+            {
                 return smallestSegment.Point2;
             }
             return null;
@@ -202,11 +233,14 @@ namespace ArtGallery {
         /// true iff the given segment overlaps at least one of the polygon's segments of vertices,
         /// ignoring any segments with a shared begin or end point with vertexSegment
         /// </returns>
-        private bool isIntersectPolygon(Polygon2D poly, LineSegment vertexSegment) {
-            foreach (LineSegment s in poly.Segments) {
+        private bool isIntersectPolygon(Polygon2D poly, LineSegment vertexSegment)
+        {
+            foreach (LineSegment s in poly.Segments)
+            {
                 // Skip the segments that have a begin or end point in common with the given segment
                 if (s.Point1 == vertexSegment.Point1 || s.Point2 == vertexSegment.Point2
-                        || s.Point1 == vertexSegment.Point2 || s.Point2 == vertexSegment.Point1) {
+                        || s.Point1 == vertexSegment.Point2 || s.Point2 == vertexSegment.Point1)
+                {
                     continue;
                 }
 
@@ -218,7 +252,8 @@ namespace ArtGallery {
 
                 // Skip begin and end points of segments
                 Vector2? x = vertexSegment.Intersect(s);
-                if (x != null) {
+                if (x != null)
+                {
                     return true;
                 }
             }
@@ -234,24 +269,29 @@ namespace ArtGallery {
         /// <returns>
         /// A DCEL created from the given list of segments
         /// </returns>
-        private DCEL mergeSegments(ICollection<LineSegment> segments) {
-            
+        private DCEL mergeSegments(ICollection<LineSegment> segments)
+        {
+
             List<LineSegment> lineSegments = new List<LineSegment>();
             // For each pair of segments
-            foreach (LineSegment s1 in segments) {
-                foreach (LineSegment s2 in segments) {
+            foreach (LineSegment s1 in segments)
+            {
+                foreach (LineSegment s2 in segments)
+                {
                     // Segments must not be the same
-                    if (!s1.Equals(s2)) {
+                    if (!s1.Equals(s2))
+                    {
                         Vector2? intersection = s1.Intersect(s2);
-                        
+
                         // TODO: Handle multiple intersections in the same linesegment
 
                         // If the segments intersect, create a new vertex at the intersecion and split the segments
-                        if (intersection != null) {
-                            lineSegments.Add(new LineSegment(s1.Point1, (Vector2) intersection));
-                            lineSegments.Add(new LineSegment(s1.Point2, (Vector2) intersection));
-                            lineSegments.Add(new LineSegment(s2.Point1, (Vector2) intersection));
-                            lineSegments.Add(new LineSegment(s2.Point2, (Vector2) intersection));
+                        if (intersection != null)
+                        {
+                            lineSegments.Add(new LineSegment(s1.Point1, (Vector2)intersection));
+                            lineSegments.Add(new LineSegment(s1.Point2, (Vector2)intersection));
+                            lineSegments.Add(new LineSegment(s2.Point1, (Vector2)intersection));
+                            lineSegments.Add(new LineSegment(s2.Point2, (Vector2)intersection));
                         }
                     }
                 }
@@ -261,7 +301,8 @@ namespace ArtGallery {
             DCEL dcel = new DCEL();
 
             // Add the segments to the DCEL
-            foreach (LineSegment segment in lineSegments) {
+            foreach (LineSegment segment in lineSegments)
+            {
                 dcel.AddSegment(segment);
             }
             return dcel;
@@ -324,7 +365,7 @@ namespace ArtGallery {
             }
         }
 
-        
+
 
         // Source: http://tripsintech.com/rotate-a-point-around-another-point-code/
         /// <summary>
@@ -776,8 +817,8 @@ namespace ArtGallery {
 
             // Let u0 be a vertex of polygon P, and the vertices are ordered counterclockwise
             List<Vector2> vertices = new List<Vector2>(polygon.Vertices.ToList());
-            int nextIndex = vertices.IndexOf((Vector2) nextVertex);
-            vertices.Insert(nextIndex, (Vector2) u0);
+            int nextIndex = vertices.IndexOf((Vector2)nextVertex);
+            vertices.Insert(nextIndex, (Vector2)u0);
             // Shift the list such that u0 is at the end of the list
             while (nextIndex >= 0)
             {
@@ -791,7 +832,7 @@ namespace ArtGallery {
             vertices.Reverse();
 
             // Initially the stack contains u0 and u1
-            visiblePoints.Push((Vector2) u0);
+            visiblePoints.Push((Vector2)u0);
             visiblePoints.Push(vertices[1]);
             // Next element to check is u2
             int nextElement = vertices.IndexOf(vertices[2]);
@@ -808,7 +849,7 @@ namespace ArtGallery {
             }
 
             //Check if u_{i-2} lies to the right or left of line segment (z, s_j)
-            Stack<Vector2> result; 
+            Stack<Vector2> result;
             if (new LineSegment(z, visiblePoints.Peek()).IsRightOf(vertices[element2Prev]))
             {
                 // Case C1
@@ -888,23 +929,7 @@ namespace ArtGallery {
             worldlocation.z = -2f;
 
             //Calculate nearest segment from island click
-            float minDistance = float.MaxValue;
-            LineSegment closestSegment = null;
-
-            var segments = LevelPolygon.Segments;
-            foreach (var segment in segments)
-            {
-                Vector3 point1Vector3 = segment.Point1;
-                point1Vector3.z = -2f;
-                Vector3 point2Vector3 = segment.Point2;
-                point2Vector3.z = -2f;
-                float distanceToSegment = UnityEditor.HandleUtility.DistancePointLine(worldlocation, point1Vector3, point2Vector3);
-                if (distanceToSegment < minDistance)
-                {
-                    minDistance = distanceToSegment;
-                    closestSegment = segment;
-                }
-            }
+            var closestSegment = GetClosestLineSegment(worldlocation);
 
             if (segmentsWithLighthouse.ContainsKey(closestSegment))
             {
@@ -930,11 +955,6 @@ namespace ArtGallery {
             // create a new lighthouse from prefab
             var go = Instantiate(m_lighthousePrefab, locationForLighthouse, Quaternion.identity) as GameObject;
 
-            // Add closest line segment to lighthouse
-            go.GetComponent<ArtGalleryLightHouse>().m_segment = closestSegment;
-
-            go.GetComponent<ArtGalleryLightHouse>().UpdateVision();
-
             // add lighthouse to art gallery solution
             m_solution.AddLighthouse(go);
             UpdateLighthouseText();
@@ -954,23 +974,38 @@ namespace ArtGallery {
         {
             if (LevelPolygon.ContainsInside(m_lighthouse.Pos))
             {
-                LineSegment selectedEdge = m_lighthouse.m_segment;
+                Vector2 lighthousePos = new Vector2(m_lighthouse.Pos.x, m_lighthouse.Pos.y);
+                LineSegment selectedEdge = GetClosestLineSegment(lighthousePos);
+
                 int edgeID = getEdgeIDByEdge(selectedEdge);
-                HashSet<int> visibleCompIDs = visibleCompIDsPerEdgeID[edgeID];
-                List<Face> faces = new List<Face>();
-                foreach (var id in visibleCompIDs)
+                Debug.Log(edgeID);
+
+                // safe key indexing
+                if (visibleCompIDsPerEdgeID.ContainsKey(edgeID))
                 {
-                    faces.Add(getFaceByID(id));
+
+                    HashSet<int> visibleCompIDs = visibleCompIDsPerEdgeID[edgeID];
+                    List<Face> faces = new List<Face>();
+                    foreach (var id in visibleCompIDs)
+                    {
+                        faces.Add(getFaceByID(id));
+                    }
+                    IEnumerable<Vector2> outerPointsAllFaces = new Vector2[] { };
+                    foreach (var face in faces)
+                    {
+                        Enumerable.Concat(outerPointsAllFaces, face.OuterPoints);
+                    }
+                    Polygon2D vision = new Polygon2D(outerPointsAllFaces);
+                    // update lighthouse visibility
+                    m_lighthouse.VisionPoly = vision;
+                    m_lighthouse.VisionAreaMesh.Polygon = vision;
                 }
-                IEnumerable<Vector2> outerPointsAllFaces = new Vector2[] { };
-                foreach (var face in faces)
+                else
                 {
-                    Enumerable.Concat(outerPointsAllFaces, face.OuterPoints);
+                    m_lighthouse.VisionPoly = null;
+                    m_lighthouse.VisionAreaMesh.Polygon = null;
                 }
-                Polygon2D vision = new Polygon2D(outerPointsAllFaces);
-                // update lighthouse visibility
-                m_lighthouse.VisionPoly = vision;
-                m_lighthouse.VisionAreaMesh.Polygon = vision;
+
             }
             else
             {
@@ -979,5 +1014,29 @@ namespace ArtGallery {
                 m_lighthouse.VisionAreaMesh.Polygon = null;
             }
         }
+
+        public LineSegment GetClosestLineSegment(Vector3 worldlocation)
+        {
+            float minDistance = float.MaxValue;
+            LineSegment closestSegment = null;
+
+            var segments = LevelPolygon.Segments;
+            foreach (var segment in segments)
+            {
+                Vector3 point1Vector3 = segment.Point1;
+                point1Vector3.z = -2f;
+                Vector3 point2Vector3 = segment.Point2;
+                point2Vector3.z = -2f;
+                float distanceToSegment = UnityEditor.HandleUtility.DistancePointLine(worldlocation, point1Vector3, point2Vector3);
+                if (distanceToSegment < minDistance)
+                {
+                    minDistance = distanceToSegment;
+                    closestSegment = segment;
+                }
+            }
+            return closestSegment;
+        }
     }
+
+
 }
