@@ -93,24 +93,28 @@ namespace ArtGallery
 
             DCEL temp = new DCEL();
 
-            foreach (LineSegment l in poly.Segments) {
-                segments.Add(l);                
+            foreach (LineSegment l in poly.Segments)
+            {
+                segments.Add(l);
             }
 
             ICollection<MultiLineSegment> mergedSegments = mergeSegments(segments);
             int count = 0;
-            foreach (MultiLineSegment s in mergedSegments) {
-                foreach (LineSegment l in s.Segments()) {
+            foreach (MultiLineSegment s in mergedSegments)
+            {
+                foreach (LineSegment l in s.Segments())
+                {
                     Debug.Log(l);
                     //try {
-                        temp.AddSegment(l);
+                    temp.AddSegment(l);
                     //} catch (Exception e) {
                     //    Debug.Log(e);
                     //}
                 }
                 Debug.Log(s);
                 count++;
-                if (count == 6) {
+                if (count == 6)
+                {
                     break;
                 }
             }
@@ -197,7 +201,8 @@ namespace ArtGallery
 
                 // Edge Case: Handle segments that completely overlap the given line (I.e. there are 
                 // infinitely many intersections)
-                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2)) {
+                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2))
+                {
                     // All points of the segment overlap!
                     if ((new LineSegment(l.Point2, s.Point1)).IsOnSegment(s.Point2))
                     {
@@ -209,7 +214,9 @@ namespace ArtGallery
                         // Beginpoint of the segment is closer
                         intersection = s.Point1;
                     }
-                } else {
+                }
+                else
+                {
                     // A single point of the segment can overlap
                     intersection = s.Intersect(l);
                 }
@@ -283,10 +290,13 @@ namespace ArtGallery
         /// <returns>
         /// A DCEL created from the given list of segments TODO update
         /// </returns>
-        private ICollection<MultiLineSegment> mergeSegments(ICollection<MultiLineSegment> segments) {
+        private ICollection<MultiLineSegment> mergeSegments(ICollection<MultiLineSegment> segments)
+        {
             // For each pair of segments
-            foreach (MultiLineSegment s1 in segments) {
-                foreach (MultiLineSegment s2 in segments) {
+            foreach (MultiLineSegment s1 in segments)
+            {
+                foreach (MultiLineSegment s2 in segments)
+                {
                     // Segments must not be the same
                     if (!s1.Equals(s2))
                     {
@@ -295,9 +305,10 @@ namespace ArtGallery
                         // TODO: Handle multiple intersections in the same linesegment
 
                         // If the segments intersect, create a new vertex at the intersecion and split the segments
-                        if (intersection != null) {
-                            s1.AddPoint((Vector2) intersection);
-                            s2.AddPoint((Vector2) intersection);
+                        if (intersection != null)
+                        {
+                            s1.AddPoint((Vector2)intersection);
+                            s2.AddPoint((Vector2)intersection);
                         }
                     }
                 }
@@ -305,10 +316,12 @@ namespace ArtGallery
             return segments;
         }
 
-        private ICollection<MultiLineSegment> mergeSegments(ICollection<LineSegment> segments) {
+        private ICollection<MultiLineSegment> mergeSegments(ICollection<LineSegment> segments)
+        {
             List<MultiLineSegment> segs = new List<MultiLineSegment>();
             // Convert the LineSegments to MultiLineSegments
-            foreach (LineSegment l in segments) {
+            foreach (LineSegment l in segments)
+            {
                 segs.Add(new MultiLineSegment(l));
             }
             return mergeSegments(segs);
@@ -348,10 +361,11 @@ namespace ArtGallery
         /// </summary>
         /// <param name="id">An ID</param>
         /// <returns>
-        /// The edge corresponding to the given id
+        /// The edge corresponding to the given id or -1 if it does not exist
         /// </returns>
         private int getEdgeIDByEdge(LineSegment segment)
         {
+            if (!edgeIDs.ContainsKey(segment)) return -1;
             int edgeID = edgeIDs[segment];
             return edgeID;
         }
@@ -1019,12 +1033,14 @@ namespace ArtGallery
         /// <param name="m_lighthouse"></param>
         public override void UpdateVision(ArtGalleryLightHouse m_lighthouse)
         {
+            m_lighthouse.VisionPoly = null;
+            m_lighthouse.VisionAreaMesh.Polygon = null;
             if (LevelPolygon.ContainsInside(m_lighthouse.Pos))
             {
                 LineSegment selectedEdge = GetClosestLineSegment(m_lighthouse.Pos);
 
                 int edgeID = getEdgeIDByEdge(selectedEdge);
-                Debug.Log(edgeID);
+                if (edgeID == -1) return;
 
                 // safe key indexing
                 if (visibleCompIDsPerEdgeID.ContainsKey(edgeID))
@@ -1051,18 +1067,6 @@ namespace ArtGallery
                     m_lighthouse.VisionPoly = vision;
                     m_lighthouse.VisionAreaMesh.Polygon = vision;
                 }
-                else
-                {
-                    m_lighthouse.VisionPoly = null;
-                    m_lighthouse.VisionAreaMesh.Polygon = null;
-                }
-
-            }
-            else
-            {
-                // remove visibility polygon from lighthouse
-                m_lighthouse.VisionPoly = null;
-                m_lighthouse.VisionAreaMesh.Polygon = null;
             }
         }
 
