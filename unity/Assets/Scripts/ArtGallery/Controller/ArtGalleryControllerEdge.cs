@@ -6,11 +6,9 @@ namespace ArtGallery
     using Util.Geometry;
     using Util.Geometry.DCEL;
     using Util.Geometry.Polygon;
-    using Main;
     using System.Linq;
     using System;
     using Util.Math;
-    using Util.Algorithms.Polygon;
 
     public class ArtGalleryControllerEdge : ArtGalleryController
     {
@@ -327,10 +325,13 @@ namespace ArtGallery
         /// <param name="faces">A list of faces</param>
         private void setFaceIDs(List<Face> faces)
         {
-            for (int i = faceIDs.Count; i < faceIDs.Count + faces.Count - 1; i++)
+            int count = 0;
+            int faceIDCount = faceIDs.Count;
+            for (int i = faceIDCount; i < faceIDCount + faces.Count; i++)
             {
-                faceIDs.Add(i, faces[0]);
-                faces.RemoveAt(0);
+                Face face = faces[count];
+                faceIDs.Add(i, face);
+                count++;
             }
         }
 
@@ -353,12 +354,10 @@ namespace ArtGallery
         /// <param name="edges">A list of edges</param>
         private void setEdgeIDs(List<LineSegment> edges)
         {
-            Debug.Log("size of the list: " + edges.Count);
             int count = 0;
             int edgeIDCount = edgeIDs.Count;
             for (int i = edgeIDCount; i < edgeIDCount + edges.Count; i++)
             {
-                Debug.Log(count);
                 LineSegment currentEdge = edges[count];
                 edgeIDs.Add(currentEdge, i);
                 count++;
