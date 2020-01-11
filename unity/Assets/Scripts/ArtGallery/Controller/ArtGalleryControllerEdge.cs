@@ -974,8 +974,7 @@ namespace ArtGallery
         {
             if (LevelPolygon.ContainsInside(m_lighthouse.Pos))
             {
-                Vector2 lighthousePos = new Vector2(m_lighthouse.Pos.x, m_lighthouse.Pos.y);
-                LineSegment selectedEdge = GetClosestLineSegment(lighthousePos);
+                LineSegment selectedEdge = GetClosestLineSegment(m_lighthouse.Pos);
 
                 int edgeID = getEdgeIDByEdge(selectedEdge);
                 Debug.Log(edgeID);
