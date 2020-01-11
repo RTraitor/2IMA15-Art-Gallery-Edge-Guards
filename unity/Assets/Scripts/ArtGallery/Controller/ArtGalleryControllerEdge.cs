@@ -949,23 +949,7 @@ namespace ArtGallery
             worldlocation.z = -2f;
 
             //Calculate nearest segment from island click
-            float minDistance = float.MaxValue;
-            LineSegment closestSegment = null;
-
-            var segments = LevelPolygon.Segments;
-            foreach (var segment in segments)
-            {
-                Vector3 point1Vector3 = segment.Point1;
-                point1Vector3.z = -2f;
-                Vector3 point2Vector3 = segment.Point2;
-                point2Vector3.z = -2f;
-                float distanceToSegment = UnityEditor.HandleUtility.DistancePointLine(worldlocation, point1Vector3, point2Vector3);
-                if (distanceToSegment < minDistance)
-                {
-                    minDistance = distanceToSegment;
-                    closestSegment = segment;
-                }
-            }
+            var closestSegment = GetClosestLineSegment(worldlocation);
 
             if (segmentsWithLighthouse.ContainsKey(closestSegment))
             {
@@ -991,11 +975,6 @@ namespace ArtGallery
             // create a new lighthouse from prefab
             var go = Instantiate(m_lighthousePrefab, locationForLighthouse, Quaternion.identity) as GameObject;
 
-            // Add closest line segment to lighthouse
-            go.GetComponent<ArtGalleryLightHouse>().m_segment = closestSegment;
-
-            go.GetComponent<ArtGalleryLightHouse>().UpdateVision();
-
             // add lighthouse to art gallery solution
             m_solution.AddLighthouse(go);
             UpdateLighthouseText();
@@ -1015,23 +994,37 @@ namespace ArtGallery
         {
             if (LevelPolygon.ContainsInside(m_lighthouse.Pos))
             {
-                LineSegment selectedEdge = m_lighthouse.m_segment;
+                LineSegment selectedEdge = GetClosestLineSegment(m_lighthouse.Pos);
+
                 int edgeID = getEdgeIDByEdge(selectedEdge);
-                HashSet<int> visibleCompIDs = visibleCompIDsPerEdgeID[edgeID];
-                List<Face> faces = new List<Face>();
-                foreach (var id in visibleCompIDs)
+                Debug.Log(edgeID);
+
+                // safe key indexing
+                if (visibleCompIDsPerEdgeID.ContainsKey(edgeID))
                 {
-                    faces.Add(getFaceByID(id));
+
+                    HashSet<int> visibleCompIDs = visibleCompIDsPerEdgeID[edgeID];
+                    List<Face> faces = new List<Face>();
+                    foreach (var id in visibleCompIDs)
+                    {
+                        faces.Add(getFaceByID(id));
+                    }
+                    IEnumerable<Vector2> outerPointsAllFaces = new Vector2[] { };
+                    foreach (var face in faces)
+                    {
+                        Enumerable.Concat(outerPointsAllFaces, face.OuterPoints);
+                    }
+                    Polygon2D vision = new Polygon2D(outerPointsAllFaces);
+                    // update lighthouse visibility
+                    m_lighthouse.VisionPoly = vision;
+                    m_lighthouse.VisionAreaMesh.Polygon = vision;
                 }
-                IEnumerable<Vector2> outerPointsAllFaces = new Vector2[] { };
-                foreach (var face in faces)
+                else
                 {
-                    Enumerable.Concat(outerPointsAllFaces, face.OuterPoints);
+                    m_lighthouse.VisionPoly = null;
+                    m_lighthouse.VisionAreaMesh.Polygon = null;
                 }
-                Polygon2D vision = new Polygon2D(outerPointsAllFaces);
-                // update lighthouse visibility
-                m_lighthouse.VisionPoly = vision;
-                m_lighthouse.VisionAreaMesh.Polygon = vision;
+
             }
             else
             {
@@ -1040,5 +1033,29 @@ namespace ArtGallery
                 m_lighthouse.VisionAreaMesh.Polygon = null;
             }
         }
+
+        public LineSegment GetClosestLineSegment(Vector3 worldlocation)
+        {
+            float minDistance = float.MaxValue;
+            LineSegment closestSegment = null;
+
+            var segments = LevelPolygon.Segments;
+            foreach (var segment in segments)
+            {
+                Vector3 point1Vector3 = segment.Point1;
+                point1Vector3.z = -2f;
+                Vector3 point2Vector3 = segment.Point2;
+                point2Vector3.z = -2f;
+                float distanceToSegment = UnityEditor.HandleUtility.DistancePointLine(worldlocation, point1Vector3, point2Vector3);
+                if (distanceToSegment < minDistance)
+                {
+                    minDistance = distanceToSegment;
+                    closestSegment = segment;
+                }
+            }
+            return closestSegment;
+        }
     }
+
+
 }
