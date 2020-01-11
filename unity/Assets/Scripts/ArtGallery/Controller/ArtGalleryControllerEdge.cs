@@ -712,20 +712,44 @@ namespace ArtGallery
         /// <returns>Returns the "chain" of vertices starting from a startvertex up to and including an endvertex</returns>
         private List<Vector2> chain(List<Vector2> vertices, Vector2 startVertex, Vector2 endVertex)
         {
-            List<Vector2> result = new List<Vector2>();
-            int startIndex = vertices.IndexOf(startVertex);
-            int endIndex = vertices.IndexOf(endVertex);
-            for (int i = 0; i < vertices.Count; i++)
+            Polygon2D polygon = new Polygon2D(vertices);
+            // It's possible that the startvertex and endvertex are on a segment of the boundary and not a vertex of the polygon
+            // Hence we add them to the list of vertices in the correct place to find the correct chain
+            if (!polygon.Vertices.Contains(startVertex))
             {
-                int index = (startIndex + i) % vertices.Count;
+                foreach (var segment in polygon.Segments)
+                {
+                    if (segment.IsOnSegment(startVertex))
+                    {
+                        polygon.AddVertexAfter(startVertex, segment.Point1);
+                    }
+                }
+            }
+            if (!polygon.Vertices.Contains(endVertex))
+            {
+                foreach (var segment in polygon.Segments)
+                {
+                    if (segment.IsOnSegment(endVertex))
+                    {
+                        polygon.AddVertexAfter(endVertex, segment.Point1);
+                    }
+                }
+            }
+            List<Vector2> result = new List<Vector2>();
+            List<Vector2> newVertices = polygon.Vertices.ToList();
+            int startIndex = newVertices.IndexOf(startVertex);
+            int endIndex = newVertices.IndexOf(endVertex);
+            for (int i = 0; i < newVertices.Count; i++)
+            {
+                int index = (startIndex + i) % newVertices.Count;
                 if (index == endIndex)
                 {
-                    result.Add(vertices[index]);
+                    result.Add(newVertices[index]);
                     break;
                 }
                 else
                 {
-                    result.Add(vertices[index]);
+                    result.Add(newVertices[index]);
                 }
             }
             return result;
@@ -748,17 +772,13 @@ namespace ArtGallery
             // R2, which is the remaining region
 
             // Defining R1
-            // TODO FIX THESE POLYGONS, CURRENTLY WRONG
             List<Vector2> chainR1 = chain(vertices, visiblePoints.ElementAt(1), visiblePoints.Peek());
             Polygon2D polyR1 = new Polygon2D(chainR1);
-            polyR1.AddVertexAfter(visiblePoints.Peek(), chainR1.Last());
-            polyR1.AddVertexAfter(visiblePoints.ElementAt(1), visiblePoints.Peek());
 
             // Defining R3
             List<Vector2> chainR3 = chain(vertices, visiblePoints.Last(), visiblePoints.ElementAt(1));
             Polygon2D polyR3 = new Polygon2D();
             polyR3.AddVertexFirst(z);
-            polyR3.AddVertex(visiblePoints.Last());
             foreach (var vertex in chainR3)
             {
                 polyR3.AddVertex(vertex);
