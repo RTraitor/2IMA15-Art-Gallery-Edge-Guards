@@ -1,4 +1,5 @@
-namespace ArtGallery {
+namespace ArtGallery
+{
 
     using System.Collections.Generic;
     using UnityEngine;
@@ -23,25 +24,32 @@ namespace ArtGallery {
         private VisibilityAreaDrawer m_areaDrawer = null;
 
         // Update is called once per frame COULD GIVE PROBLEMS - TEST NECESSARY
-        void Update() {
+        void Update()
+        {
             //handle input key presses
-            if (m_areaDrawer != null) {
-                if (Input.GetKeyDown("a")) {
+            if (m_areaDrawer != null)
+            {
+                if (Input.GetKeyDown("a"))
+                {
                     m_areaDrawer.ToggleDrawAll();
                 }
-                if (Input.GetKeyDown("e")) {
+                if (Input.GetKeyDown("e"))
+                {
                     m_areaDrawer.ToggleDrawEdges();
                 }
-                if (Input.GetKeyDown("v")) {
+                if (Input.GetKeyDown("v"))
+                {
                     m_areaDrawer.ToggleDrawVertices();
                 }
-                if (Input.GetKeyDown("f")) {
+                if (Input.GetKeyDown("f"))
+                {
                     m_areaDrawer.ToggleDrawFaces();
                 }
             }
         }
 
-        public override void InitLevel() {
+        public override void InitLevel()
+        {
             base.InitLevel();
             Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
@@ -52,7 +60,8 @@ namespace ArtGallery {
             //}
             DCEL dcell = computeVisibilityRegions(LevelPolygon);
             //Debug.Log(dcell);
-            if (m_areaDrawer != null) {
+            if (m_areaDrawer != null)
+            {
                 m_areaDrawer.VisibilityAreas = dcell;
             }
             Debug.Log("Level Drawer Initalised!");
@@ -67,7 +76,8 @@ namespace ArtGallery {
         /// <returns>
         /// A DCEL containing the visibility regions of a polygon
         /// </returns>
-        private DCEL computeVisibilityRegions(Polygon2D poly) {
+        private DCEL computeVisibilityRegions(Polygon2D poly)
+        {
             ICollection<LineSegment> segments = getVisibilitySegments(poly);
 
             Debug.Log("Number of vertices: " + LevelPolygon.VertexCount);
@@ -106,19 +116,25 @@ namespace ArtGallery {
         /// <returns>
         /// The (overlapping) Line Segments that are needed to compute the given polygon's visbility regions
         /// </returns>
-        private ICollection<LineSegment> getVisibilitySegments(Polygon2D poly) {
+        private ICollection<LineSegment> getVisibilitySegments(Polygon2D poly)
+        {
             LinkedList<LineSegment> segments = new LinkedList<LineSegment>();
-            
-            foreach (Vector2 v in poly.Vertices) {
-                foreach (Vector2 v2 in poly.Vertices) {
-                    if (v.Equals(v2)) {
+
+            foreach (Vector2 v in poly.Vertices)
+            {
+                foreach (Vector2 v2 in poly.Vertices)
+                {
+                    if (v.Equals(v2))
+                    {
                         continue;
                     }
 
-                    if (poly.isConvex(v2) == false) { // v2 is Reflex
+                    if (poly.isConvex(v2) == false)
+                    { // v2 is Reflex
 
                         LineSegment s = new LineSegment(v, v2);
-                        if (isIntersectPolygon(poly, s)) {
+                        if (isIntersectPolygon(poly, s))
+                        {
                             // Skip if the two vertices cannot see each other.
                             // NOTE: This includes colinear points (meaning that only 'adjacent' colinear points are not skipped)
                             continue;
@@ -126,10 +142,11 @@ namespace ArtGallery {
 
                         Vector2? closestIntersection = intersectPolygonClosest(poly, new Line(v, v2));
 
-                        if (closestIntersection != null) {
-                            segments.AddFirst(new LineSegment(v2, (Vector2) closestIntersection));
+                        if (closestIntersection != null)
+                        {
+                            segments.AddFirst(new LineSegment(v2, (Vector2)closestIntersection));
                         }
-                        
+
                     }
                 }
             }
@@ -150,17 +167,21 @@ namespace ArtGallery {
         // Finds the closest proper intersection
         // l.p1 is vertex
         // l.p2 is concave vertex
-        private Vector2? intersectPolygonClosest(Polygon2D poly, Line l) {
+        private Vector2? intersectPolygonClosest(Polygon2D poly, Line l)
+        {
             LineSegment smallestSegment = null;
-            foreach (LineSegment s in poly.Segments) {
+            foreach (LineSegment s in poly.Segments)
+            {
                 // Will contain the intersection of l and s (if any)
                 Vector2? intersection = null;
 
                 // Ignore segments that the ray starts in (if any)
-                if (s.IsOnSegment(l.Point2)) {
+                if (s.IsOnSegment(l.Point2))
+                {
                     // Exception: if a segment starts in l2 and is on the line, there is no intersection
                     if (Line.Colinear(l.Point1, s.Point1, s.Point2)
-                            && !(l.Point1 == s.Point1 || l.Point1 == s.Point2)) {
+                            && !(l.Point1 == s.Point1 || l.Point1 == s.Point2))
+                    {
                         return null;
                     }
                     continue;
@@ -170,10 +191,13 @@ namespace ArtGallery {
                 // infinitely many intersections)
                 if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2)) {
                     // All points of the segment overlap!
-                    if ((new LineSegment(l.Point2, s.Point1)).IsOnSegment(s.Point2)) {
+                    if ((new LineSegment(l.Point2, s.Point1)).IsOnSegment(s.Point2))
+                    {
                         // Endpoint of the segment is closer
                         intersection = s.Point2;
-                    } else if ((new LineSegment(l.Point2, s.Point2)).IsOnSegment(s.Point1)) {
+                    }
+                    else if ((new LineSegment(l.Point2, s.Point2)).IsOnSegment(s.Point1))
+                    {
                         // Beginpoint of the segment is closer
                         intersection = s.Point1;
                     }
@@ -184,17 +208,20 @@ namespace ArtGallery {
 
                 // Ignore intersections on the 'wrong' side
                 // TODO: optimize this(?); ignore segments on one side of the line perpendicular to l
-                if (intersection != null && (new LineSegment(l.Point2, (Vector2) intersection)).IsOnSegment(l.Point1)) {
+                if (intersection != null && (new LineSegment(l.Point2, (Vector2)intersection)).IsOnSegment(l.Point1))
+                {
                     continue;
                 }
 
                 // There is an intersection, and it was closer than the previous closest intersection
-                if (intersection != null && (smallestSegment == null || smallestSegment.IsOnSegment((Vector2) intersection))) {
-                    smallestSegment = new LineSegment(l.Point2, (Vector2) intersection);
+                if (intersection != null && (smallestSegment == null || smallestSegment.IsOnSegment((Vector2)intersection)))
+                {
+                    smallestSegment = new LineSegment(l.Point2, (Vector2)intersection);
                 }
             }
-            
-            if (smallestSegment != null && !smallestSegment.Point2.Equals(l.Point2)) {
+
+            if (smallestSegment != null && !smallestSegment.Point2.Equals(l.Point2))
+            {
                 return smallestSegment.Point2;
             }
             return null;
@@ -211,11 +238,14 @@ namespace ArtGallery {
         /// true iff the given segment overlaps at least one of the polygon's segments of vertices,
         /// ignoring any segments with a shared begin or end point with vertexSegment
         /// </returns>
-        private bool isIntersectPolygon(Polygon2D poly, LineSegment vertexSegment) {
-            foreach (LineSegment s in poly.Segments) {
+        private bool isIntersectPolygon(Polygon2D poly, LineSegment vertexSegment)
+        {
+            foreach (LineSegment s in poly.Segments)
+            {
                 // Skip the segments that have a begin or end point in common with the given segment
                 if (s.Point1 == vertexSegment.Point1 || s.Point2 == vertexSegment.Point2
-                        || s.Point1 == vertexSegment.Point2 || s.Point2 == vertexSegment.Point1) {
+                        || s.Point1 == vertexSegment.Point2 || s.Point2 == vertexSegment.Point1)
+                {
                     continue;
                 }
 
@@ -227,7 +257,8 @@ namespace ArtGallery {
 
                 // Skip begin and end points of segments
                 Vector2? x = vertexSegment.Intersect(s);
-                if (x != null) {
+                if (x != null)
+                {
                     return true;
                 }
             }
@@ -249,7 +280,8 @@ namespace ArtGallery {
             foreach (MultiLineSegment s1 in segments) {
                 foreach (MultiLineSegment s2 in segments) {
                     // Segments must not be the same
-                    if (!s1.Equals(s2)) {
+                    if (!s1.Equals(s2))
+                    {
                         Vector2? intersection = s1.Intersect(s2);
 
                         // TODO: Handle multiple intersections in the same linesegment
@@ -331,7 +363,7 @@ namespace ArtGallery {
             }
         }
 
-        
+
 
         // Source: http://tripsintech.com/rotate-a-point-around-another-point-code/
         /// <summary>
@@ -381,7 +413,7 @@ namespace ArtGallery {
         /// <param name="z"></param>
         /// <param name="xAxis"></param>
         /// <returns></returns>
-        private Boolean newEdgeCrossesXAxis(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
+        private int newEdgeCrossesXAxis(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
             // Whenever the stack content changes from (s_0, s_1, ..., s_m) to (s_0, s_1, ..., s_(m+1)) such that
             // line segment (s_m, s_(m+1)) crosses the x-axis at v
@@ -398,11 +430,11 @@ namespace ArtGallery {
                     LineSegment segmentK = new LineSegment(vertices[index], vertices[indexNext]);
                     if (segmentK.Intersect(new LineSegment(visiblePoints.Last(), (Vector2)v)) != null) ;
                     {
-                        return true;
+                        return index;
                     }
                 }
             }
-            return false;
+            return -1;
         }
 
         /// <summary>
@@ -424,34 +456,37 @@ namespace ArtGallery {
             {
                 int index = (nextElement + i) % (vertices.Count);
                 int indexPrev = (nextElement + i - 1) % (vertices.Count);
-                LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]);
-                // If segment intersects the positive x-axis then we increase the count
-                if (segment.Intersect(xAxis)?.x > z.x)
+                if (indexPrev < 0) // indexPrev can only be negative for -1. Then the previous index is the index of the last vertex in the list
                 {
-                    crossedXAxisCount++;
+                    indexPrev = vertices.Count - 1;
                 }
+                LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]);
+                
                 Ray2D halfLine = new Ray2D(visiblePoints.Peek(), RotatePoint(z, visiblePoints.Peek(), 180));
-                Vector2? intersection = segment.Intersect(halfLine);
+                Vector2? v = segment.Intersect(halfLine);
                 //If the x-axis intersection count is even and the intersection is not the origin of the ray
-                if (!intersection.Equals(null) && !MathUtil.EqualsEps((Vector2)intersection, visiblePoints.Peek()) && crossedXAxisCount % 2 == 0)
+                if (!v.Equals(null) && !MathUtil.EqualsEps((Vector2)v, visiblePoints.Peek()) && crossedXAxisCount % 2 == 0)
                 {
-                    Vector2 v = (Vector2)segment.Intersect(halfLine);
                     nextElement = (index + 1) % vertices.Count;
-                    visiblePoints.Push(v);
-                    if (newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis))
-                    {
-                        return region3(visiblePoints, vertices, nextElement, z, xAxis);
-                    }
-                    if (index == 0) // Algorithm terminates when u_0 is pushed on the stack again
+                    visiblePoints.Push((Vector2)v);
+                    if (index == 0) // Algorithm terminates when u_0 is pushed on the stack again 
                     {
                         return visiblePoints;
                     }
                     visiblePoints.Push(vertices[index]);
-                    if (newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis))
+                    int newIndex = newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis);
+                    if (newIndex >= 0)
                     {
+                        nextElement = newIndex;
                         return region3(visiblePoints, vertices, nextElement, z, xAxis);
                     }
                     break;
+                }
+                // TODO check whether positive x-axis is correct
+                // If segment intersects the positive x-axis then we increase the count
+                if (segment.Intersect(xAxis)?.x > z.x)
+                {
+                    crossedXAxisCount++;
                 }
             }
             return case1(visiblePoints, vertices, nextElement, z, xAxis);
@@ -474,11 +509,13 @@ namespace ArtGallery {
                 return visiblePoints;
             }
             visiblePoints.Push(vertices[nextElement]);
-            if (newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis))
+            nextElement = (nextElement + 1) % vertices.Count;
+            int newIndex = newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis);
+            if (newIndex >= 0)
             {
+                nextElement = newIndex;
                 return region3(visiblePoints, vertices, nextElement, z, xAxis);
             }
-            nextElement = (nextElement + 1) % vertices.Count;
             return case1(visiblePoints, vertices, nextElement, z, xAxis);
         }
 
@@ -498,23 +535,20 @@ namespace ArtGallery {
             {
                 int index = (nextElement + i) % vertices.Count;
                 int indexPrev = (nextElement + i - 1) % vertices.Count;
+                if (indexPrev < 0) // indexPrev can only be negative for -1. Then the previous index is the index of the last vertex in the list
+                {
+                    indexPrev = vertices.Count - 1;
+                }
                 LineSegment segmentK = new LineSegment(vertices[indexPrev], vertices[index]);
                 Vector2? v = segmentK.Intersect(new LineSegment(visiblePoints.ElementAt(1), visiblePoints.Peek()));
                 if (v != null)
                 {
                     // Remaining steps identical to region 3 where s_(j-1) is v
-                    Vector2 topOfStack = visiblePoints.Pop();
-                    visiblePoints.Pop(); // TODO: This line might need to be removed, not sure
-                    visiblePoints.Push((Vector2)v);
-                    if (newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis))
-                    {
-                        return region3(visiblePoints, vertices, nextElement, z, xAxis);
-                    }
+                    Vector2 topOfStack = visiblePoints.Pop(); 
+                    visiblePoints.Pop(); // We remove the element previously at s_(j-1). otherwise C5 in the example would contain v2
+                    visiblePoints.Push((Vector2)v); 
                     visiblePoints.Push(topOfStack);
-                    if (newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis))
-                    {
-                        return region3(visiblePoints, vertices, nextElement, z, xAxis);
-                    }
+                    nextElement = index; // We update the index, otherwise v_3 would be in C5 instead of v_4
                     break;
                 }
             }
@@ -538,11 +572,13 @@ namespace ArtGallery {
                 return visiblePoints;
             }
             visiblePoints.Push(vertices[nextElement]);
-            if (newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis))
+            nextElement = (nextElement + 1) % vertices.Count;
+            int newIndex = newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis);
+            if (newIndex >= 0)
             {
+                nextElement = newIndex;
                 return region3(visiblePoints, vertices, nextElement, z, xAxis);
             }
-            nextElement = (nextElement + 1) % vertices.Count;
             return case1(visiblePoints, vertices, nextElement, z, xAxis);
         }
 
@@ -580,6 +616,10 @@ namespace ArtGallery {
                 {
                     int index = (nextElement + i) % (vertices.Count); //k
                     int indexPrev = (nextElement + i - 1) % (vertices.Count); //k-1
+                    if (indexPrev < 0) // indexPrev can only be negative for -1. Then the previous index is the index of the last vertex in the list
+                    {
+                        indexPrev = vertices.Count - 1;
+                    }
                     LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]); //(u_(k-1), u_k)
                     Vector2? w = segment.Intersect(edgeSMV);
                     if (w != null)
@@ -588,17 +628,15 @@ namespace ArtGallery {
                         // (u_(k+1) ; s_0, s_1, ..., s_m, w, u_k)
                         nextElement = (index + 1) % (vertices.Count);
                         visiblePoints.Push((Vector2)w);
-                        if (newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis))
-                        {
-                            return region3(visiblePoints, vertices, nextElement, z, xAxis);
-                        }
                         if (index == 0) // Algorithm terminates when u_0 is pushed on the stack again
                         {
                             return visiblePoints;
                         }
                         visiblePoints.Push(vertices[index]);
-                        if (newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis))
+                        int newIndex = newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis);
+                        if (newIndex >= 0)
                         {
+                            nextElement = newIndex;
                             return region3(visiblePoints, vertices, nextElement, z, xAxis);
                         }
                         break;
@@ -610,17 +648,15 @@ namespace ArtGallery {
             {
                 v = new LineSegment(visiblePoints.Peek(), sm1).Intersect(new Line(z, vertices[nextElement]));
                 visiblePoints.Push((Vector2)v);
-                if (newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis))
-                {
-                    return region3(visiblePoints, vertices, nextElement, z, xAxis);
-                }
                 if (nextElement == 0) // Algorithm terminates when u_0 is pushed on the stack again
                 {
                     return visiblePoints;
                 }
                 visiblePoints.Push(vertices[nextElement]);
-                if (newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis))
+                int newIndex = newEdgeCrossesXAxis(visiblePoints, vertices, nextElement, z, xAxis);
+                if (newIndex >= 0)
                 {
+                    nextElement = newIndex;
                     return region3(visiblePoints, vertices, nextElement, z, xAxis);
                 }
                 nextElement = (nextElement + 1) % vertices.Count;
@@ -674,20 +710,44 @@ namespace ArtGallery {
         /// <returns>Returns the "chain" of vertices starting from a startvertex up to and including an endvertex</returns>
         private List<Vector2> chain(List<Vector2> vertices, Vector2 startVertex, Vector2 endVertex)
         {
-            List<Vector2> result = new List<Vector2>();
-            int startIndex = vertices.IndexOf(startVertex);
-            int endIndex = vertices.IndexOf(endVertex);
-            for (int i = 0; i < vertices.Count; i++)
+            Polygon2D polygon = new Polygon2D(vertices);
+            // It's possible that the startvertex and endvertex are on a segment of the boundary and not a vertex of the polygon
+            // Hence we add them to the list of vertices in the correct place to find the correct chain
+            if (!polygon.Vertices.Contains(startVertex))
             {
-                int index = (startIndex + i) % vertices.Count;
+                foreach (var segment in polygon.Segments)
+                {
+                    if (segment.IsOnSegment(startVertex))
+                    {
+                        polygon.AddVertexAfter(startVertex, segment.Point1);
+                    }
+                }
+            }
+            if (!polygon.Vertices.Contains(endVertex))
+            {
+                foreach (var segment in polygon.Segments)
+                {
+                    if (segment.IsOnSegment(endVertex))
+                    {
+                        polygon.AddVertexAfter(endVertex, segment.Point1);
+                    }
+                }
+            }
+            List<Vector2> result = new List<Vector2>();
+            List<Vector2> newVertices = polygon.Vertices.ToList();
+            int startIndex = newVertices.IndexOf(startVertex);
+            int endIndex = newVertices.IndexOf(endVertex);
+            for (int i = 0; i < newVertices.Count; i++)
+            {
+                int index = (startIndex + i) % newVertices.Count;
                 if (index == endIndex)
                 {
-                    result.Add(vertices[index]);
+                    result.Add(newVertices[index]);
                     break;
                 }
                 else
                 {
-                    result.Add(vertices[index]);
+                    result.Add(newVertices[index]);
                 }
             }
             return result;
@@ -712,14 +772,11 @@ namespace ArtGallery {
             // Defining R1
             List<Vector2> chainR1 = chain(vertices, visiblePoints.ElementAt(1), visiblePoints.Peek());
             Polygon2D polyR1 = new Polygon2D(chainR1);
-            polyR1.AddVertexAfter(visiblePoints.Peek(), chainR1.Last());
-            polyR1.AddVertexAfter(visiblePoints.ElementAt(1), visiblePoints.Peek());
 
             // Defining R3
             List<Vector2> chainR3 = chain(vertices, visiblePoints.Last(), visiblePoints.ElementAt(1));
             Polygon2D polyR3 = new Polygon2D();
             polyR3.AddVertexFirst(z);
-            polyR3.AddVertex(visiblePoints.Last());
             foreach (var vertex in chainR3)
             {
                 polyR3.AddVertex(vertex);
@@ -783,8 +840,8 @@ namespace ArtGallery {
 
             // Let u0 be a vertex of polygon P, and the vertices are ordered counterclockwise
             List<Vector2> vertices = new List<Vector2>(polygon.Vertices.ToList());
-            int nextIndex = vertices.IndexOf((Vector2) nextVertex);
-            vertices.Insert(nextIndex, (Vector2) u0);
+            int nextIndex = vertices.IndexOf((Vector2)nextVertex);
+            vertices.Insert(nextIndex, (Vector2)u0);
             // Shift the list such that u0 is at the end of the list
             while (nextIndex >= 0)
             {
@@ -797,8 +854,23 @@ namespace ArtGallery {
             // Note that u0 is now at the front of the list
             vertices.Reverse();
 
+            //DEBUG CODE 
+            try
+            {
+                if (MathUtil.EqualsEps((Vector2)u0, vertices[0]))
+                {
+                    throw new Exception("Exception: u0 is not at the front of the list of vertices");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e, this);
+            }
+            // DEBUG CODE 
+
+
             // Initially the stack contains u0 and u1
-            visiblePoints.Push((Vector2) u0);
+            visiblePoints.Push((Vector2)u0);
             visiblePoints.Push(vertices[1]);
             // Next element to check is u2
             int nextElement = vertices.IndexOf(vertices[2]);
@@ -815,7 +887,7 @@ namespace ArtGallery {
             }
 
             //Check if u_{i-2} lies to the right or left of line segment (z, s_j)
-            Stack<Vector2> result; 
+            Stack<Vector2> result;
             if (new LineSegment(z, visiblePoints.Peek()).IsRightOf(vertices[element2Prev]))
             {
                 // Case C1
@@ -895,23 +967,7 @@ namespace ArtGallery {
             worldlocation.z = -2f;
 
             //Calculate nearest segment from island click
-            float minDistance = float.MaxValue;
-            LineSegment closestSegment = null;
-
-            var segments = LevelPolygon.Segments;
-            foreach (var segment in segments)
-            {
-                Vector3 point1Vector3 = segment.Point1;
-                point1Vector3.z = -2f;
-                Vector3 point2Vector3 = segment.Point2;
-                point2Vector3.z = -2f;
-                float distanceToSegment = UnityEditor.HandleUtility.DistancePointLine(worldlocation, point1Vector3, point2Vector3);
-                if (distanceToSegment < minDistance)
-                {
-                    minDistance = distanceToSegment;
-                    closestSegment = segment;
-                }
-            }
+            var closestSegment = GetClosestLineSegment(worldlocation);
 
             if (segmentsWithLighthouse.ContainsKey(closestSegment))
             {
@@ -937,11 +993,6 @@ namespace ArtGallery {
             // create a new lighthouse from prefab
             var go = Instantiate(m_lighthousePrefab, locationForLighthouse, Quaternion.identity) as GameObject;
 
-            // Add closest line segment to lighthouse
-            go.GetComponent<ArtGalleryLightHouse>().m_segment = closestSegment;
-
-            go.GetComponent<ArtGalleryLightHouse>().UpdateVision();
-
             // add lighthouse to art gallery solution
             m_solution.AddLighthouse(go);
             UpdateLighthouseText();
@@ -961,23 +1012,42 @@ namespace ArtGallery {
         {
             if (LevelPolygon.ContainsInside(m_lighthouse.Pos))
             {
-                LineSegment selectedEdge = m_lighthouse.m_segment;
+                LineSegment selectedEdge = GetClosestLineSegment(m_lighthouse.Pos);
+
                 int edgeID = getEdgeIDByEdge(selectedEdge);
-                HashSet<int> visibleCompIDs = visibleCompIDsPerEdgeID[edgeID];
-                List<Face> faces = new List<Face>();
-                foreach (var id in visibleCompIDs)
+                Debug.Log(edgeID);
+
+                // safe key indexing
+                if (visibleCompIDsPerEdgeID.ContainsKey(edgeID))
                 {
-                    faces.Add(getFaceByID(id));
+
+                    HashSet<int> visibleCompIDs = visibleCompIDsPerEdgeID[edgeID];
+                    List<Face> faces = new List<Face>();
+                    foreach (var id in visibleCompIDs)
+                    {
+                        faces.Add(getFaceByID(id));
+                    }
+                
+                    List<Vector2> outerPointsAllFaces = new List<Vector2>();
+                    foreach (var face in faces)
+                    {
+                        foreach (var point in face.OuterPoints) 
+                        {
+                            outerPointsAllFaces.Add(point);
+                        }
+                    }
+                    
+                    Polygon2D vision = new Polygon2D(outerPointsAllFaces);
+                    // update lighthouse visibility
+                    m_lighthouse.VisionPoly = vision;
+                    m_lighthouse.VisionAreaMesh.Polygon = vision;
                 }
-                IEnumerable<Vector2> outerPointsAllFaces = new Vector2[] { };
-                foreach (var face in faces)
+                else
                 {
-                    Enumerable.Concat(outerPointsAllFaces, face.OuterPoints);
+                    m_lighthouse.VisionPoly = null;
+                    m_lighthouse.VisionAreaMesh.Polygon = null;
                 }
-                Polygon2D vision = new Polygon2D(outerPointsAllFaces);
-                // update lighthouse visibility
-                m_lighthouse.VisionPoly = vision;
-                m_lighthouse.VisionAreaMesh.Polygon = vision;
+
             }
             else
             {
@@ -986,5 +1056,29 @@ namespace ArtGallery {
                 m_lighthouse.VisionAreaMesh.Polygon = null;
             }
         }
+
+        public LineSegment GetClosestLineSegment(Vector3 worldlocation)
+        {
+            float minDistance = float.MaxValue;
+            LineSegment closestSegment = null;
+
+            var segments = LevelPolygon.Segments;
+            foreach (var segment in segments)
+            {
+                Vector3 point1Vector3 = segment.Point1;
+                point1Vector3.z = -2f;
+                Vector3 point2Vector3 = segment.Point2;
+                point2Vector3.z = -2f;
+                float distanceToSegment = UnityEditor.HandleUtility.DistancePointLine(worldlocation, point1Vector3, point2Vector3);
+                if (distanceToSegment < minDistance)
+                {
+                    minDistance = distanceToSegment;
+                    closestSegment = segment;
+                }
+            }
+            return closestSegment;
+        }
     }
+
+
 }
