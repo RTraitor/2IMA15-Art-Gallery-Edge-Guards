@@ -9,6 +9,7 @@ namespace ArtGallery
     using System.Linq;
     using System;
     using Util.Math;
+    using Util.Algorithms.Triangulation;
 
     public class ArtGalleryControllerEdge : ArtGalleryController
     {
@@ -17,6 +18,7 @@ namespace ArtGallery
         private Dictionary<int, Face> faceIDs = new Dictionary<int, Face>();
         private Dictionary<LineSegment, int> edgeIDs = new Dictionary<LineSegment, int>();
         private Dictionary<int, HashSet<int>> visibleCompIDsPerEdgeID = new Dictionary<int, HashSet<int>>();
+        private List<String> trace = new List<String>();
 
         //Unity references
         private VisibilityAreaDrawer m_areaDrawer = null;
@@ -59,20 +61,20 @@ namespace ArtGallery
         {
             base.InitLevel();
             RefreshVariables();
-            Debug.Log("Initialising Level Drawer...");
-            m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
+            //Debug.Log("Initialising Level Drawer...");
+            //m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
 
-            //DCEL dcell = new DCEL();
-            //foreach (LineSegment s in LevelPolygon.Segments) {
-            //    dcell.AddSegment(s);
+            ////DCEL dcell = new DCEL();
+            ////foreach (LineSegment s in LevelPolygon.Segments) {
+            ////    dcell.AddSegment(s);
+            ////}
+            //DCEL dcell = computeVisibilityRegions(LevelPolygon);
+            ////Debug.Log(dcell);
+            //if (m_areaDrawer != null)
+            //{
+            //    m_areaDrawer.VisibilityAreas = dcell;
             //}
-            DCEL dcell = computeVisibilityRegions(LevelPolygon);
-            //Debug.Log(dcell);
-            if (m_areaDrawer != null)
-            {
-                m_areaDrawer.VisibilityAreas = dcell;
-            }
-            Debug.Log("Level Drawer Initalised!");
+            //Debug.Log("Level Drawer Initalised!");
 
             int five = calcNeededNrOfEdgeGuards();
         }
@@ -93,7 +95,7 @@ namespace ArtGallery
 
             ICollection<MultiLineSegment> mergedSegments = mergeSegments(segments);
             DCEL temp = new DCEL();
-            Debug.Log(temp.ToString());
+            //Debug.Log(temp.ToString());
             //Debug.Log("It fails at segment: " + mergedSegments.ElementAt(10));
             foreach (var segment in LevelPolygon.Segments)
             {
@@ -103,11 +105,11 @@ namespace ArtGallery
             {
                 temp.AddSegment(segment);
             }
-            foreach (var face in temp.Faces)
-            {
-                Debug.Log("Faces: " + face.ToString());
-            }
-            Debug.Log("mergedSegments.Count: " + mergedSegments.Count);
+            //foreach (var face in temp.Faces)
+            //{
+            //    Debug.Log("Faces: " + face.ToString());
+            //}
+            //Debug.Log("mergedSegments.Count: " + mergedSegments.Count);
             
             
             return temp;
@@ -463,6 +465,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case1Region1(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
+            trace.Add("case 1 Region 1"); //DEBUG
             // NextElement in Region1
             // NextElement not visible from z
             // Scan vertices of P from nextElement until some vertex u_k
@@ -518,6 +521,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case1Region2(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
+            trace.Add("case 1 Region 2"); //DEBUG
             // NextElement in Region2
             if (nextElement == 0) // Algorithm terminates when u_0 is pushed on the stack again
             {
@@ -545,6 +549,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case2Region1(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
+            trace.Add("case 2 Region 1"); //DEBUG
             // Scanning vertices of P until vertex u_k such that line segment (u_(k-1), u_k) intersects line segment (s_(j-1), s_j) at v for the first time
             for (int i = 0; i < vertices.Count; i++)
             {
@@ -581,6 +586,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case2Region2(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
+            trace.Add("case 2 Region 2"); //DEBUG
             // The configuration becomes (u_(i+1); s_0, s_1, ..., s_j, u_i) and belongs to C_1
             if (nextElement == 0) // Algorithm terminates when u_0 is pushed on the stack again
             {
@@ -608,6 +614,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> region3(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
+            trace.Add("region 3"); //DEBUG
             // NextElement in Region3
             // Edge (NextElement-1, NextElement) blocks points in the stack
             // Pop elements off the stack until some s_m such that edge (u_(i-1), u_i)
@@ -617,6 +624,7 @@ namespace ArtGallery
             while (v == null || !new Line(z, visiblePoints.ElementAt(1)).PointRightOfLine(vertices[nextElement]))
             {
                 visiblePoints.Pop();
+                Debug.Assert(visiblePoints.Count >= 2);
                 v = currNextLine.Intersect(new LineSegment(visiblePoints.Peek(), visiblePoints.ElementAt(1)));
             }
             // Still have s_(m+1) on the stack, which needs to be removed from the stack
@@ -690,6 +698,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case1(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
+            trace.Add("case 1"); //DEBUG
             // Polygon from z and the current stack
             Polygon2D polyZAndStack = new Polygon2D(visiblePoints);
             polyZAndStack.AddVertexFirst(z);
@@ -779,6 +788,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case2(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
+            trace.Add("case 2"); //DEBUG
             // Three regions: 
             // R1, defined by Ch(s_(j-1), s_j) (chain from s_(j-1) to s_j) and line segment (s_j, s_(j-1))
             // R3, which is the interior of the polygon defined by line segment (z, s_0), followed by Ch(s_0, s_(j-1)), and line segment (s_(j-1), z)
@@ -855,34 +865,29 @@ namespace ArtGallery
 
             // Let u0 be a vertex of polygon P, and the vertices are ordered counterclockwise
             List<Vector2> vertices = new List<Vector2>(polygon.Vertices.ToList());
-            int nextIndex = vertices.IndexOf((Vector2)nextVertex);
-            vertices.Insert(nextIndex, (Vector2)u0);
+            if (!vertices.Any(vertex => MathUtil.EqualsEps(vertex, (Vector2)u0)))
+            {
+                int nextIndex = vertices.IndexOf((Vector2)nextVertex);
+                vertices.Insert(nextIndex, (Vector2)u0);
+            }
+            int indexU0 = vertices.IndexOf((Vector2) u0);
             // Shift the list such that u0 is at the end of the list
-            while (nextIndex >= 0)
+            while (indexU0 >= 0)
             {
                 var first = vertices[0];
                 vertices.Remove(first);
                 vertices.Add(first);
-                nextIndex--;
+                indexU0--;
             }
             // Reverse the list such that the vertices are ordered counter clockwise
             // Note that u0 is now at the front of the list
             vertices.Reverse();
-
-            //DEBUG CODE 
-            try
+            Debug.Log("z: " + z.ToString());
+            Debug.Log("u0: " + u0.ToString());
+            for (int i = 0; i < vertices.Count; i++)
             {
-                if (MathUtil.EqualsEps((Vector2)u0, vertices[0]))
-                {
-                    throw new Exception("Exception: u0 is not at the front of the list of vertices");
-                }
+                Debug.Log("index: " + i + ", vertex: " + vertices[i].ToString());
             }
-            catch (Exception e)
-            {
-                Debug.LogException(e, this);
-            }
-            // DEBUG CODE 
-
 
             // Initially the stack contains u0 and u1
             visiblePoints.Push((Vector2)u0);
@@ -928,8 +933,8 @@ namespace ArtGallery
                 // Compute visible components (faces)
                 foreach (var faceID in faceIDs)
                 {
-                    // For every convex component c, take one of its vertices z
-                    DCELVertex vertex = faceID.Value.OuterVertices.ToList()[0];
+                    // For every convex component c, take a point in the face
+                    DCELVertex vertex = new DCELVertex((Vector2) Triangulator.Triangulate(faceID.Value.PolygonWithoutHoles, false).Triangles.First().Circumcenter);
                     // Compute VP(P, z); weakly visible points of P from z
                     List<Vector2> weakVisiblePoints = computeWeaklyVisiblePointsInPFromZ(LevelPolygon, vertex.Pos);
                     // For every vertex v in VP(P, z), add c to the set of the edge containing v
@@ -958,19 +963,22 @@ namespace ArtGallery
         /// </returns>
         private int calcNeededNrOfEdgeGuards()
         {
-            //// Draw lines through every pair of vertices 
-            //List<Line> lines = generateLines(LevelPolygon.Vertices.ToList());
-            //// Create convex components 
-            //List<LineSegment> lineSegments = generateLineSegments(lines);
-            //DCEL dcel = createDCELFromPolygonAndSegments(LevelPolygon, lineSegments);
-            //List<Face> faces = dcel.InnerFaces.ToList();
-            //// Give IDs to the faces
-            //setFaceIDs(faces);
-            //// Give IDs to the edges
+            Debug.Log("Initialising Level Drawer...");
+            m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
+            DCEL dcell = computeVisibilityRegions(LevelPolygon);
+            if (m_areaDrawer != null)
+            {
+                m_areaDrawer.VisibilityAreas = dcell;
+            }
+            Debug.Log("Level Drawer Initalised!");
+            List<Face> faces = dcell.InnerFaces.ToList();
+            // Give IDs to the faces
+            setFaceIDs(faces);
+            // Give IDs to the edges
             setEdgeIDs(LevelPolygon.Segments.ToList());
-            //// Store visible convex components(/faces) for each edge by index
-            //computeVisibleComponentsPerEdge(dcel);
-            //// Calculate the needed number of edge guards
+            // Store visible convex components(/faces) for each edge by index
+            computeVisibleComponentsPerEdge(dcell);
+            // Calculate the needed number of edge guards
             //return SetCover.Solve(new HashSet<int>(faceIDs.Keys), visibleCompIDsPerEdgeID);
             return 5;
         }
