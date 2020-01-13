@@ -75,7 +75,7 @@ namespace ArtGallery
             }
             Debug.Log("Level Drawer Initalised!");
 
-            //int five = calcNeededNrOfEdgeGuards();
+            int five = calcNeededNrOfEdgeGuards();
 
             // Hardcoded visibility for one edge in the first level, quite useful so keep it in for debugging
             /*
@@ -635,12 +635,14 @@ namespace ArtGallery
             LineSegment currNextLine = new LineSegment(vertices[prevIndex], vertices[nextElement]);
             Vector2? v = currNextLine.Intersect(new LineSegment(visiblePoints.Peek(), visiblePoints.ElementAt(1)));
             Line ln = new Line(z, visiblePoints.ElementAt(1));
-            while (v == null && !(ln.PointRightOfLine(vertices[nextElement]) || ln.IsOnLine(vertices[nextElement])))
+            while (v == null && (ln.PointRightOfLine(vertices[nextElement]) || ln.IsOnLine(vertices[nextElement])))
             {
+                Debug.Log("R3, in a while, config: " + getCurrentConfig(visiblePoints, vertices, nextElement)); //DEBUG
                 visiblePoints.Pop();
                 ln = new Line(z, visiblePoints.ElementAt(1));
                 v = currNextLine.Intersect(new LineSegment(visiblePoints.Peek(), visiblePoints.ElementAt(1)));
             }
+            Debug.Log("R3, after a while, config: " + getCurrentConfig(visiblePoints, vertices, nextElement)); //DEBUG
             // Still have s_(m+1) on the stack, which needs to be removed from the stack
             Vector2 sm1 = visiblePoints.Pop();
             // If edge (u_(i-1), u_i) intersects (s_m, s_(m+1))
@@ -683,6 +685,7 @@ namespace ArtGallery
             }
             else // u_i lies to the left of line (z, s_m)
             {
+                Debug.Log("R3, Else case, config: " + getCurrentConfig(visiblePoints, vertices, nextElement)); //DEBUG
                 v = new LineSegment(visiblePoints.Peek(), sm1).Intersect(new Line(z, vertices[nextElement]));
                 foreach (var step in trace)
                 {
@@ -915,7 +918,7 @@ namespace ArtGallery
             Debug.Log("u0: " + u0.ToString());
 
             // Initially the stack contains u0 and u1
-            visiblePoints.Push((Vector2)u0);
+            visiblePoints.Push(vertices[0]);
             visiblePoints.Push(vertices[1]);
             // Next element to check is u2
             int nextElement = vertices.IndexOf(vertices[2]);
@@ -959,9 +962,22 @@ namespace ArtGallery
                 foreach (var faceID in faceIDs)
                 {
                     // For every convex component c, take a point in the face
-                    DCELVertex vertex = new DCELVertex((Vector2) Triangulator.Triangulate(faceID.Value.PolygonWithoutHoles, false).Triangles.First().Circumcenter);
+                    Debug.Log("ME GO FACE: " + faceID.Value);
+                    List<Vector2> verticesOfTriangleInFace = Triangulator.Triangulate(faceID.Value.PolygonWithoutHoles, false).Triangles.First().Vertices;
+                    float centerX = 0;
+                    float centerY = 0;
+                    foreach (var vertexOfTriangle in verticesOfTriangleInFace)
+                    {
+                        centerX = centerX + vertexOfTriangle.x;
+                        centerY = centerY + vertexOfTriangle.y;
+                    }
+                    centerX = centerX / 3;
+                    centerY = centerY / 3;
+
+                    Vector2 vertex = new Vector2(centerX, centerY);
+
                     // Compute VP(P, z); weakly visible points of P from z
-                    List<Vector2> weakVisiblePoints = computeWeaklyVisiblePointsInPFromZ(LevelPolygon, vertex.Pos);
+                    List <Vector2> weakVisiblePoints = computeWeaklyVisiblePointsInPFromZ(LevelPolygon, vertex);
                     // For every vertex v in VP(P, z), add c to the set of the edge containing v
                     foreach (var v in weakVisiblePoints)
                     {
