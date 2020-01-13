@@ -10,6 +10,7 @@ namespace ArtGallery
     using System;
     using Util.Math;
     using Util.Algorithms.Triangulation;
+    using Main;
 
     public class ArtGalleryControllerEdge : ArtGalleryController
     {
@@ -75,7 +76,9 @@ namespace ArtGallery
             }
             Debug.Log("Level Drawer Initalised!");
 
-            int five = calcNeededNrOfEdgeGuards();
+            //Edgebound is the result of the setcover algorithm, which can be used to set as a bound for the number of lighthouses.
+            //Not currently used
+            int edgeBound = calcNeededNrOfEdgeGuards();
 
             // Hardcoded visibility for one edge in the first level, quite useful so keep it in for debugging
             /*
@@ -1020,8 +1023,7 @@ namespace ArtGallery
             // Store visible convex components(/faces) for each edge by index
             computeVisibleComponentsPerEdge(dcell);
             // Calculate the needed number of edge guards
-            //return SetCover.Solve(new HashSet<int>(faceIDs.Keys), visibleCompIDsPerEdgeID);
-            return 5;
+            return SetCover.Solve(new HashSet<int>(faceIDs.Keys), visibleCompIDsPerEdgeID).Count;
         }
 
         public override void HandleIslandClick()
