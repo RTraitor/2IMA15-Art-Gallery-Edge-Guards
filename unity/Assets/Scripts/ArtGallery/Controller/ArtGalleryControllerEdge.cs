@@ -19,6 +19,7 @@ namespace ArtGallery
         private Dictionary<LineSegment, int> edgeIDs = new Dictionary<LineSegment, int>();
         private Dictionary<int, HashSet<int>> visibleCompIDsPerEdgeID = new Dictionary<int, HashSet<int>>();
         private List<String> trace = new List<String>();
+        private int countCrossesNegX = 0;
 
         //Unity references
         private VisibilityAreaDrawer m_areaDrawer = null;
@@ -405,7 +406,7 @@ namespace ArtGallery
             // line segment (s_m, s_(m+1)) crosses the x-axis at v
             LineSegment segmentS = new LineSegment(visiblePoints.ElementAt(1), visiblePoints.Peek());
             Vector2? v = segmentS.Intersect(xAxis);
-            if (v != null)
+            if (v != null && v?.x > z.x && countCrossesNegX == 1)
             {
                 // Continue scanning vertices of P until an edge (u_k, u_(k+1)) intersecting line segment (s_0, v) is found
                 // Then the treatment for this situation is exactly the same as region3. 
@@ -419,8 +420,31 @@ namespace ArtGallery
                         return index;
                     }
                 }
+            } else if (v != null && v?.x < z.x)
+            {
+                if (segmentS.Point1.y > z.y)
+                {
+                    countCrossesNegX++;
+                }
+                else if (segmentS.Point1.y < z.y)
+                {
+                    countCrossesNegX--;
+                }
             }
             return -1;
+        }
+
+        private String getCurrentConfig(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement)
+        {
+            String config = "(u" + nextElement + ";";
+            for (int i = visiblePoints.Count-1; i >= 0; i--)
+            {
+                config += " ";
+                int index = vertices.IndexOf(visiblePoints.ElementAt(i));
+                config += "u" + index + ",";
+            }
+            config += ")";
+            return config;
         }
 
         /// <summary>
@@ -434,7 +458,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case1Region1(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
-            trace.Add("case 1 Region 1"); //DEBUG
+            Debug.Log("case 1 Region 1, config: " + getCurrentConfig(visiblePoints, vertices, nextElement)); //DEBUG
             // NextElement in Region1
             // NextElement not visible from z
             // Scan vertices of P from nextElement until some vertex u_k
@@ -490,7 +514,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case1Region2(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
-            trace.Add("case 1 Region 2"); //DEBUG
+            Debug.Log("case 1 Region 2, config: " + getCurrentConfig(visiblePoints, vertices, nextElement)); //DEBUG
             // NextElement in Region2
             if (nextElement == 0) // Algorithm terminates when u_0 is pushed on the stack again
             {
@@ -518,7 +542,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case2Region1(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
-            trace.Add("case 2 Region 1"); //DEBUG
+            Debug.Log("case 2 Region 1, config: " + getCurrentConfig(visiblePoints, vertices, nextElement)); //DEBUG
             // Scanning vertices of P until vertex u_k such that line segment (u_(k-1), u_k) intersects line segment (s_(j-1), s_j) at v for the first time
             for (int i = 0; i < vertices.Count; i++)
             {
@@ -555,7 +579,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case2Region2(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
-            trace.Add("case 2 Region 2"); //DEBUG
+            Debug.Log("case 2 Region 2, config: " + getCurrentConfig(visiblePoints, vertices, nextElement)); //DEBUG
             // The configuration becomes (u_(i+1); s_0, s_1, ..., s_j, u_i) and belongs to C_1
             if (nextElement == 0) // Algorithm terminates when u_0 is pushed on the stack again
             {
@@ -583,17 +607,22 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> region3(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
-            trace.Add("region 3"); //DEBUG
+            Debug.Log("Region 3, config: " + getCurrentConfig(visiblePoints, vertices, nextElement)); //DEBUG
             // NextElement in Region3
             // Edge (NextElement-1, NextElement) blocks points in the stack
             // Pop elements off the stack until some s_m such that edge (u_(i-1), u_i)
             // intersects (s_m, s_(m+1)) at v or u_i lies to the left of line (z, s_m)
-            LineSegment currNextLine = new LineSegment(vertices[nextElement - 1], vertices[nextElement]);
+            int prevIndex = nextElement;
+            if (nextElement - 1 < 0) {
+                prevIndex = vertices.Count - 1;
+            } 
+            LineSegment currNextLine = new LineSegment(vertices[prevIndex], vertices[nextElement]);
             Vector2? v = currNextLine.Intersect(new LineSegment(visiblePoints.Peek(), visiblePoints.ElementAt(1)));
-            while (v == null || !new Line(z, visiblePoints.ElementAt(1)).PointRightOfLine(vertices[nextElement]))
+            Line ln = new Line(z, visiblePoints.ElementAt(1));
+            while (v == null && !(ln.PointRightOfLine(vertices[nextElement]) || ln.IsOnLine(vertices[nextElement])))
             {
                 visiblePoints.Pop();
-                Debug.Assert(visiblePoints.Count >= 2);
+                ln = new Line(z, visiblePoints.ElementAt(1));
                 v = currNextLine.Intersect(new LineSegment(visiblePoints.Peek(), visiblePoints.ElementAt(1)));
             }
             // Still have s_(m+1) on the stack, which needs to be removed from the stack
@@ -639,7 +668,12 @@ namespace ArtGallery
             else // u_i lies to the left of line (z, s_m)
             {
                 v = new LineSegment(visiblePoints.Peek(), sm1).Intersect(new Line(z, vertices[nextElement]));
-                visiblePoints.Push((Vector2)v);
+                foreach (var step in trace)
+                {
+                    Debug.Log(step);
+                }
+                Debug.Assert(v != null);
+                visiblePoints.Push((Vector2) v);
                 if (nextElement == 0) // Algorithm terminates when u_0 is pushed on the stack again
                 {
                     return visiblePoints;
@@ -667,7 +701,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case1(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
-            trace.Add("case 1"); //DEBUG
+            Debug.Log("case 1, config: " + getCurrentConfig(visiblePoints, vertices, nextElement)); //DEBUG
             // Polygon from z and the current stack
             Polygon2D polyZAndStack = new Polygon2D(visiblePoints);
             polyZAndStack.AddVertexFirst(z);
@@ -757,7 +791,7 @@ namespace ArtGallery
         /// <returns>Returns a stack of visible points in P from point z</returns>
         private Stack<Vector2> case2(Stack<Vector2> visiblePoints, List<Vector2> vertices, int nextElement, Vector2 z, Line xAxis)
         {
-            trace.Add("case 2"); //DEBUG
+            Debug.Log("case 2, config: " + getCurrentConfig(visiblePoints, vertices, nextElement)); //DEBUG
             // Three regions: 
             // R1, defined by Ch(s_(j-1), s_j) (chain from s_(j-1) to s_j) and line segment (s_j, s_(j-1))
             // R3, which is the interior of the polygon defined by line segment (z, s_0), followed by Ch(s_0, s_(j-1)), and line segment (s_(j-1), z)
@@ -853,10 +887,6 @@ namespace ArtGallery
             vertices.Reverse();
             Debug.Log("z: " + z.ToString());
             Debug.Log("u0: " + u0.ToString());
-            for (int i = 0; i < vertices.Count; i++)
-            {
-                Debug.Log("index: " + i + ", vertex: " + vertices[i].ToString());
-            }
 
             // Initially the stack contains u0 and u1
             visiblePoints.Push((Vector2)u0);
