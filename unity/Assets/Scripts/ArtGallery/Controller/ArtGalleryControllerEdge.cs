@@ -819,6 +819,16 @@ namespace ArtGallery
             {
                 // R3
                 // Treatment for this case identical to treatment for region 3 of case 1
+                // ContainsInside also returns true when point is on the boundary
+                // We filter this and if the point is on the boundary, it belongs in region 2
+                foreach (var segment in polyR3.Segments)
+                {
+                    if (segment.IsOnSegment(vertices[nextElement]))
+                    {
+                        // R2
+                        return case2Region2(visiblePoints, vertices, nextElement, z, xAxis);
+                    }
+                }
                 return region3(visiblePoints, vertices, nextElement, z, xAxis);
             }
             else
