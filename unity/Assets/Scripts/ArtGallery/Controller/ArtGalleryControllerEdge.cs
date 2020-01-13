@@ -6,11 +6,9 @@ namespace ArtGallery
     using Util.Geometry;
     using Util.Geometry.DCEL;
     using Util.Geometry.Polygon;
-    using Main;
     using System.Linq;
     using System;
     using Util.Math;
-    using Util.Algorithms.Polygon;
 
     public class ArtGalleryControllerEdge : ArtGalleryController
     {
@@ -48,9 +46,19 @@ namespace ArtGallery
             }
         }
 
+        private void RefreshVariables()
+        {
+            segmentsWithLighthouse = new Dictionary<LineSegment, ArtGalleryLightHouse>();
+            faceIDs = new Dictionary<int, Face>();
+            edgeIDs = new Dictionary<LineSegment, int>();
+            visibleCompIDsPerEdgeID = new Dictionary<int, HashSet<int>>();
+            m_areaDrawer = null;
+        }
+
         public override void InitLevel()
         {
             base.InitLevel();
+            RefreshVariables();
             Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
             
@@ -161,7 +169,8 @@ namespace ArtGallery
 
                 // Edge Case: Handle segments that completely overlap the given line (I.e. there are 
                 // infinitely many intersections)
-                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2)) {
+                if (l.IsOnLine(s.Point1) && l.IsOnLine(s.Point2))
+                {
                     // All points of the segment overlap!
                     if ((new LineSegment(l.Point2, s.Point1)).IsOnSegment(s.Point2))
                     {
@@ -173,7 +182,9 @@ namespace ArtGallery
                         // Beginpoint of the segment is closer
                         intersection = s.Point1;
                     }
-                } else {
+                }
+                else
+                {
                     // A single point of the segment can overlap
                     intersection = s.Intersect(l);
                 }
@@ -270,7 +281,8 @@ namespace ArtGallery
         private DCEL mergeSegments(Polygon2D poly, ICollection<LineSegment> segments) {
             List<MultiLineSegment> segs = new List<MultiLineSegment>();
             // Convert the LineSegments to MultiLineSegments
-            foreach (LineSegment l in segments) {
+            foreach (LineSegment l in segments)
+            {
                 segs.Add(new MultiLineSegment(l));
             }
             return mergeSegments(poly, segs);
@@ -295,10 +307,13 @@ namespace ArtGallery
         /// <param name="faces">A list of faces</param>
         private void setFaceIDs(List<Face> faces)
         {
-            for (int i = faceIDs.Count; i < faceIDs.Count + faces.Count - 1; i++)
+            int count = 0;
+            int faceIDCount = faceIDs.Count;
+            for (int i = faceIDCount; i < faceIDCount + faces.Count; i++)
             {
-                faceIDs.Add(i, faces[0]);
-                faces.RemoveAt(0);
+                Face face = faces[count];
+                faceIDs.Add(i, face);
+                count++;
             }
         }
 
@@ -307,10 +322,11 @@ namespace ArtGallery
         /// </summary>
         /// <param name="id">An ID</param>
         /// <returns>
-        /// The edge corresponding to the given id
+        /// The edge corresponding to the given id or -1 if it does not exist
         /// </returns>
         private int getEdgeIDByEdge(LineSegment segment)
         {
+            if (!edgeIDs.ContainsKey(segment)) return -1;
             int edgeID = edgeIDs[segment];
             return edgeID;
         }
@@ -321,12 +337,10 @@ namespace ArtGallery
         /// <param name="edges">A list of edges</param>
         private void setEdgeIDs(List<LineSegment> edges)
         {
-            Debug.Log("size of the list: " + edges.Count);
             int count = 0;
             int edgeIDCount = edgeIDs.Count;
             for (int i = edgeIDCount; i < edgeIDCount + edges.Count; i++)
             {
-                Debug.Log(count);
                 LineSegment currentEdge = edges[count];
                 edgeIDs.Add(currentEdge, i);
                 count++;
@@ -431,7 +445,7 @@ namespace ArtGallery
                     indexPrev = vertices.Count - 1;
                 }
                 LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]);
-                
+
                 Ray2D halfLine = new Ray2D(visiblePoints.Peek(), RotatePoint(z, visiblePoints.Peek(), 180));
                 Vector2? v = segment.Intersect(halfLine);
                 //If the x-axis intersection count is even and the intersection is not the origin of the ray
@@ -514,9 +528,9 @@ namespace ArtGallery
                 if (v != null)
                 {
                     // Remaining steps identical to region 3 where s_(j-1) is v
-                    Vector2 topOfStack = visiblePoints.Pop(); 
+                    Vector2 topOfStack = visiblePoints.Pop();
                     visiblePoints.Pop(); // We remove the element previously at s_(j-1). otherwise C5 in the example would contain v2
-                    visiblePoints.Push((Vector2)v); 
+                    visiblePoints.Push((Vector2)v);
                     visiblePoints.Push(topOfStack);
                     nextElement = index; // We update the index, otherwise v_3 would be in C5 instead of v_4
                     break;
@@ -980,12 +994,14 @@ namespace ArtGallery
         /// <param name="m_lighthouse"></param>
         public override void UpdateVision(ArtGalleryLightHouse m_lighthouse)
         {
+            m_lighthouse.VisionPoly = null;
+            m_lighthouse.VisionAreaMesh.Polygon = null;
             if (LevelPolygon.ContainsInside(m_lighthouse.Pos))
             {
                 LineSegment selectedEdge = GetClosestLineSegment(m_lighthouse.Pos);
 
                 int edgeID = getEdgeIDByEdge(selectedEdge);
-                Debug.Log(edgeID);
+                if (edgeID == -1) return;
 
                 // safe key indexing
                 if (visibleCompIDsPerEdgeID.ContainsKey(edgeID))
@@ -997,33 +1013,21 @@ namespace ArtGallery
                     {
                         faces.Add(getFaceByID(id));
                     }
-                
+
                     List<Vector2> outerPointsAllFaces = new List<Vector2>();
                     foreach (var face in faces)
                     {
-                        foreach (var point in face.OuterPoints) 
+                        foreach (var point in face.OuterPoints)
                         {
                             outerPointsAllFaces.Add(point);
                         }
                     }
-                    
+
                     Polygon2D vision = new Polygon2D(outerPointsAllFaces);
                     // update lighthouse visibility
                     m_lighthouse.VisionPoly = vision;
                     m_lighthouse.VisionAreaMesh.Polygon = vision;
                 }
-                else
-                {
-                    m_lighthouse.VisionPoly = null;
-                    m_lighthouse.VisionAreaMesh.Polygon = null;
-                }
-
-            }
-            else
-            {
-                // remove visibility polygon from lighthouse
-                m_lighthouse.VisionPoly = null;
-                m_lighthouse.VisionAreaMesh.Polygon = null;
             }
         }
 
