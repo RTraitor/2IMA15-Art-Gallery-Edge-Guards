@@ -10,10 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 477620}
   - component: {fileID: 21230616}
-  - component: {fileID: 11481246}
   - component: {fileID: 61000011016102134}
+  - component: {fileID: 7732802295889947573}
   m_Layer: 0
-  m_Name: LightHouse
+  m_Name: LightHouseInvis
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -40,7 +40,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 189480}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -82,19 +82,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &11481246
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 189480}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4921e7ddea60b0149bccaf033af97f29, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_visionAreaPrefab: {fileID: 130026, guid: b28ea02908c4e1f47b00982d1b97f4aa, type: 3}
 --- !u!61 &61000011016102134
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -102,7 +89,7 @@ BoxCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 189480}
-  m_Enabled: 1
+  m_Enabled: 0
   m_Density: 1
   m_Material: {fileID: 0}
   m_IsTrigger: 0
@@ -121,3 +108,16 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 0.53457165, y: 0.8182981}
   m_EdgeRadius: 0
+--- !u!114 &7732802295889947573
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 189480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45ad32262ec7dab42aed0e4eb2ebad53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_visionAreaPrefab: {fileID: 130026, guid: b28ea02908c4e1f47b00982d1b97f4aa, type: 3}

@@ -603,6 +603,8 @@ MonoBehaviour:
   m_lighthousePrefab: {fileID: 189480, guid: 52e5a999253ee854c99f4ecc1a19d437, type: 3}
   m_advanceButton: {fileID: 1205957480}
   m_lighthouseText: {fileID: 498406362}
+  m_lighthouseInvisPrefab: {fileID: 189480, guid: 41d1166351f6c24459e8e8f69c58b867,
+    type: 3}
 --- !u!4 &1127619768 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4525038442495064, guid: df3d444a912111e4dada71b6deec06cc,
