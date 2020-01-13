@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using UnityEngine;
 namespace Main
 {
     public class SetEqualityComparer : IEqualityComparer<HashSet<int>>
@@ -82,23 +83,42 @@ namespace Main
         /// </returns>
         private static Tuple<HashSet<int>, Dictionary<int, HashSet<int>>, List<int>> Reduce(HashSet<int> U, Dictionary<int, HashSet<int>> F)
         {
-            var FaceSets = new Dictionary<int, HashSet<int>>();
-            foreach (var key in F.Keys)
-            {
+            // EdgeSets : Edges -> 2^Faces
+            var EdgeSets = new Dictionary<int, HashSet<int>>();
 
-                foreach (var face in F[key])
+    	    // deep copy
+            foreach (var edge in F.Keys)
+            {
+                foreach (var face in F[edge])
                 {
-                    if (FaceSets.ContainsKey(face))
+                    if (EdgeSets.ContainsKey(edge))
                     {
-                        FaceSets[face].Add(key);
+                        EdgeSets[edge].Add(face);
                     }
                     else
                     {
-                        FaceSets.Add(face, new HashSet<int> { key });
+                        EdgeSets.Add(edge, new HashSet<int> { face });
                     }
                 }
             }
 
+            // FaceSets : Faces -> 2^Edges
+            var FaceSets = new Dictionary<int, HashSet<int>>();
+            foreach (var edge in EdgeSets.Keys)
+            {
+
+                foreach (var face in EdgeSets[edge])
+                {
+                    if (FaceSets.ContainsKey(face))
+                    {
+                        FaceSets[face].Add(edge);
+                    }
+                    else
+                    {
+                        FaceSets.Add(face, new HashSet<int> { edge });
+                    }
+                }
+            }
 
             // main reduction loop
             // whether the solution changed at all
@@ -117,16 +137,34 @@ namespace Main
                 }
 
                 // remove duplicates
-                var noDups = RemoveDuplicates(F);
+                var noDups = RemoveDuplicates(EdgeSets);
                 if (noDups.Item1)
                 {
                     reduced = true;
                     changed = true;
-                    F = noDups.Item2;
+                    EdgeSets = noDups.Item2;
+
+                    FaceSets = new Dictionary<int, HashSet<int>>();
+                    foreach (var key in EdgeSets.Keys)
+                    {
+
+                        foreach (var edge in EdgeSets[key])
+                        {
+                            if (FaceSets.ContainsKey(edge))
+                            {
+                                FaceSets[edge].Add(key);
+                            }
+                            else
+                            {
+                                FaceSets.Add(edge, new HashSet<int> { key });
+                            }
+                        }
+                    }
+
                     continue;
                 }
 
-                // remove isolated faces
+                //remove isolated faces
                 var isolated =
                 from set in FaceSets
                 where (set.Value.Count == 1)
@@ -142,17 +180,17 @@ namespace Main
                     var coveredEdges = new HashSet<int>();
                     foreach (var face in isolated)
                     {
-                        delta.Add(face);
-                        var ids = FaceSets[face];
-                        // only executed once...
-                        foreach (var id in ids)
+                        // only one set that includes the face
+                        var edge = FaceSets[face].ElementAt(0);
+                        delta.Add(edge);
+
+                        foreach (var f in EdgeSets[edge])
                         {
-                            foreach (var f in F[id])
-                            {
-                                coveredFaces.Add(f);
-                            }
-                            coveredEdges.Add(id);
+                            coveredFaces.Add(f);
                         }
+
+                        coveredEdges.Add(edge);
+
                     }
 
                     // build new FaceSets
@@ -161,39 +199,47 @@ namespace Main
                     {
                         if (!coveredFaces.Contains(pair.Key))
                         {
-                            var newSet = pair.Value;
-                            newSet.ExceptWith(coveredEdges);
-                            newFaceSets.Add(pair.Key, newSet);
+                            newFaceSets.Add(pair.Key, pair.Value);
                         }
                     }
                     FaceSets = newFaceSets;
 
-                    // build new F
-                    var newF = new Dictionary<int, HashSet<int>>();
-                    foreach (var pair in F)
+                    // build new EdgeSets
+                    var newEdgeSets = new Dictionary<int, HashSet<int>>();
+                    foreach (var pair in EdgeSets)
                     {
                         if (!coveredEdges.Contains(pair.Key))
                         {
-                            var newSet = pair.Value;
-                            newSet.ExceptWith(coveredFaces);
-                            newF.Add(pair.Key, newSet);
+                            var faces = pair.Value;
+                            faces.ExceptWith(coveredFaces);
+                            newEdgeSets.Add(pair.Key, faces);
                         }
                     }
-                    F = newF;
+
+                    // remove empty sets
+                    EdgeSets = new Dictionary<int, HashSet<int>>();
+                    foreach (var pair in newEdgeSets)
+                    {
+                        if (pair.Value.Count > 0)
+                        {
+                            EdgeSets.Add(pair.Key, pair.Value);
+                        }
+                    }
 
                     continue;
                 }
 
 
                 // find the first completely included subsets and remove it
-                for (int i = 0; i < F.Count && !changed; i++)
+                for (int i = 0; i < EdgeSets.Count && !changed; i++)
                 {
-                    var key = F.ElementAt(i).Key;
-                    var A = F.ElementAt(i).Value;
-                    for (int j = i + 1; j < F.Count; j++)
+                    var edge = EdgeSets.ElementAt(i).Key;
+                    var A = EdgeSets.ElementAt(i).Value;
+                    for (int j = 0; j < EdgeSets.Count; j++)
                     {
+                        if (i == j) continue;
                         bool complete = true;
-                        var B = F.ElementAt(j).Value;
+                        var B = EdgeSets.ElementAt(j).Value;
                         foreach (var x in A)
                         {
                             if (!B.Contains(x))
@@ -203,11 +249,24 @@ namespace Main
                         }
                         if (complete)
                         {
-                            foreach (var x in A)
+                            foreach (var face in A)
                             {
-                                FaceSets[x].Remove(key);
+                                // face no longer occurs in Vis(edge)
+                                FaceSets[face].Remove(edge);
                             }
-                            F.Remove(key);
+
+                            // remove empty sets
+                            var newFaceSets = new Dictionary<int, HashSet<int>>();
+                            foreach (var pair in FaceSets)
+                            {
+                                if (pair.Value.Count > 0)
+                                {
+                                    newFaceSets.Add(pair.Key, pair.Value);
+                                }
+                            }
+                            FaceSets = newFaceSets;
+
+                            EdgeSets.Remove(edge);
 
                             reduced = true;
                             changed = true;
@@ -223,24 +282,30 @@ namespace Main
                 }
 
                 // remove the first face which is present in every set
-                var included =
-                from set in FaceSets
-                where (set.Value.Count == F.Count)
-                select set.Key;
+                var redundant = false;
+                var redundantFace = 0;
 
-                if (included.Count() > 0)
+                foreach (var face in FaceSets.Keys)
+                {
+                    if (FaceSets[face].Count == EdgeSets.Keys.Count)
+                    {
+                        // no isolated faces
+                        redundant = true;
+                        redundantFace = face;
+                        break;
+                    }
+                }
+
+                if (redundant)
                 {
                     reduced = true;
                     changed = true;
-                    var face = included.ElementAt(0);
 
-                    FaceSets.Remove(face);
-
-                    foreach (var set in F)
+                    FaceSets.Remove(redundantFace);
+                    foreach (var pair in EdgeSets)
                     {
-                        set.Value.Remove(face);
+                        pair.Value.Remove(redundantFace);
                     }
-                    continue;
                 }
 
             } while (changed);
@@ -251,12 +316,12 @@ namespace Main
             {
 
                 var new_U = new HashSet<int>();
-                foreach (var face in FaceSets)
+                foreach (var face in FaceSets.Keys)
                 {
-                    new_U.Add(face.Key);
+                    new_U.Add(face);
                 }
 
-                return Tuple.Create(new_U, F, delta);
+                return Tuple.Create(new_U, FaceSets, delta);
             }
             else
             {
@@ -379,7 +444,7 @@ namespace Main
                 }
 
                 result.Add(max.Key);
-                
+
                 // safe set subtraction
                 U.ExceptWith(max.Value);
                 foreach (var pair in F)
@@ -406,8 +471,8 @@ namespace Main
             {
                 // reduce it
                 var t = Reduce(U, F);
-                U = t.Item1;
-                F = t.Item2;
+                var new_U = t.Item1;
+                var new_F = t.Item2;
                 var delta = t.Item3;
 
                 if (U.Count == 0)
@@ -416,7 +481,7 @@ namespace Main
                 }
                 else
                 {
-                    var result = ExactSetCover(U, F);
+                    var result = ExactSetCover(new_U, new_F);
                     foreach (var id in result)
                     {
                         delta.Add(id);
