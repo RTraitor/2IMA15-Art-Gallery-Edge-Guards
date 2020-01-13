@@ -957,43 +957,53 @@ namespace ArtGallery
         /// </summary>
         private void computeVisibleComponentsPerEdge(DCEL dcel)
         {
-            foreach (var edgeID in edgeIDs)
+            foreach (var id in edgeIDs)
             {
-                // Store visible components(/faces) for this edge by index
-                HashSet<int> visibleComps = new HashSet<int>();
-                // Compute visible components (faces)
-                foreach (var faceID in faceIDs)
+                visibleCompIDsPerEdgeID.Add(id.Value, new HashSet<int>());
+            }
+            // Compute visible components (faces)
+            foreach (var faceID in faceIDs)
+            {
+                // For every convex component c, take a point in the face
+                Debug.Log("ME GO FACE: " + faceID.Value);
+                List<Vector2> verticesOfTriangleInFace = Triangulator.Triangulate(faceID.Value.PolygonWithoutHoles, false).Triangles.First().Vertices;
+                float centerX = 0;
+                float centerY = 0;
+                foreach (var vertexOfTriangle in verticesOfTriangleInFace)
                 {
-                    // For every convex component c, take a point in the face
-                    Debug.Log("ME GO FACE: " + faceID.Value);
-                    List<Vector2> verticesOfTriangleInFace = Triangulator.Triangulate(faceID.Value.PolygonWithoutHoles, false).Triangles.First().Vertices;
-                    float centerX = 0;
-                    float centerY = 0;
-                    foreach (var vertexOfTriangle in verticesOfTriangleInFace)
-                    {
-                        centerX = centerX + vertexOfTriangle.x;
-                        centerY = centerY + vertexOfTriangle.y;
-                    }
-                    centerX = centerX / 3;
-                    centerY = centerY / 3;
+                    centerX = centerX + vertexOfTriangle.x;
+                    centerY = centerY + vertexOfTriangle.y;
+                }
+                centerX = centerX / 3;
+                centerY = centerY / 3;
 
-                    Vector2 vertex = new Vector2(centerX, centerY);
+                Vector2 vertex = new Vector2(centerX, centerY);
 
-                    // Compute VP(P, z); weakly visible points of P from z
-                    List <Vector2> weakVisiblePoints = computeWeaklyVisiblePointsInPFromZ(LevelPolygon, vertex);
-                    // For every vertex v in VP(P, z), add c to the set of the edge containing v
-                    foreach (var v in weakVisiblePoints)
+                // Compute VP(P, z); weakly visible points of P from z
+                List <Vector2> weakVisiblePoints = computeWeaklyVisiblePointsInPFromZ(LevelPolygon, vertex);
+                // For every vertex v in VP(P, z), add c to the set of the edge containing v
+                foreach (var v in weakVisiblePoints)
+                {
+                    foreach (var segment in LevelPolygon.Segments)
                     {
-                        foreach (var segment in dcel.Edges)
+                        if (segment.IsOnSegment(v))
                         {
-                            if (segment.Segment.IsOnSegment(v))
-                            {
-                                visibleComps.Add(faceID.Key);
-                            }
+                            int id = getEdgeIDByEdge(segment);
+                            visibleCompIDsPerEdgeID[id].Add(faceID.Key);
                         }
                     }
                 }
-                visibleCompIDsPerEdgeID.Add(edgeID.Value, visibleComps);
+            }
+            foreach (var tuple in visibleCompIDsPerEdgeID)
+            {
+                var edge = edgeIDs.FirstOrDefault(x => x.Value == tuple.Key).Key;
+                String faces = "";
+                foreach (var faceID in tuple.Value)
+                {
+                    faces += getFaceByID(faceID).ToString() + ", ";
+                }
+                Debug.Log("Edge: " + edge + ", visible faces count: " + tuple.Value.Count);
+                Debug.Log(faces);
             }
         }
 
