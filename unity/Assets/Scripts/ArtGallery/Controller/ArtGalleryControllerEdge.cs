@@ -733,6 +733,17 @@ namespace ArtGallery
             // by a line through z and the first element on the stack
             if (polyZAndStack.ContainsInside(vertices[nextElement]))
             {
+                // R3
+                // ContainsInside also returns true when point is on the boundary
+                // We filter this and if the point is on the boundary, it belongs in region 2
+                foreach (var segment in polyZAndStack.Segments)
+                {
+                    if (segment.IsOnSegment(vertices[nextElement]))
+                    {
+                        // R2
+                        return case1Region2(visiblePoints, vertices, nextElement, z, xAxis);
+                    }
+                }
                 return region3(visiblePoints, vertices, nextElement, z, xAxis);
             }
             else
@@ -905,7 +916,9 @@ namespace ArtGallery
                 int nextIndex = vertices.IndexOf((Vector2)nextVertex);
                 vertices.Insert(nextIndex, (Vector2)u0);
             }
-            int indexU0 = vertices.IndexOf((Vector2) u0);
+            Debug.Assert(vertices.Contains((Vector2) u0));
+            int indexU0 = vertices.IndexOf(vertices.Where(vertex => MathUtil.EqualsEps(vertex, (Vector2)u0)).FirstOrDefault());
+            Debug.Log("index of u0: " + indexU0);
             // Shift the list such that u0 is at the end of the list
             while (indexU0 >= 0)
             {
@@ -917,6 +930,11 @@ namespace ArtGallery
             // Reverse the list such that the vertices are ordered counter clockwise
             // Note that u0 is now at the front of the list
             vertices.Reverse();
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                Debug.Log("index: " + i + ", " + vertices[i]);
+            }
+
             Debug.Log("z: " + z.ToString());
             Debug.Log("u0: " + u0.ToString());
 
@@ -994,17 +1012,18 @@ namespace ArtGallery
                     }
                 }
             }
-            foreach (var tuple in visibleCompIDsPerEdgeID)
-            {
-                var edge = edgeIDs.FirstOrDefault(x => x.Value == tuple.Key).Key;
-                String faces = "";
-                foreach (var faceID in tuple.Value)
-                {
-                    faces += getFaceByID(faceID).ToString() + ", ";
-                }
-                Debug.Log("Edge: " + edge + ", visible faces count: " + tuple.Value.Count);
-                Debug.Log(faces);
-            }
+            //DEBUG CODE
+            //foreach (var tuple in visibleCompIDsPerEdgeID)
+            //{
+            //    var edge = edgeIDs.FirstOrDefault(x => x.Value == tuple.Key).Key;
+            //    String faces = "";
+            //    foreach (var faceID in tuple.Value)
+            //    {
+            //        faces += getFaceByID(faceID).ToString() + ", ";
+            //    }
+            //    Debug.Log("Edge: " + edge + ", visible faces count: " + tuple.Value.Count);
+            //    Debug.Log(faces);
+            //}
         }
 
         /// <summary>
