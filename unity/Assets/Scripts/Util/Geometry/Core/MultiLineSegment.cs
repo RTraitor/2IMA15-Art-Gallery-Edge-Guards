@@ -25,7 +25,7 @@
         {
             m_longestSegment = s;
             m_points.AddFirst(s.Point1);
-            m_points.AddFirst(s.Point2);
+            m_points.AddLast(s.Point2);
         }
 
         public MultiLineSegment(Vector2 a_point1, Vector2 a_point2)
@@ -52,7 +52,8 @@
             // Check if p is between any existing points
             for (LinkedListNode<Vector2> node = m_points.First; node != null; node = node.Next) {
                 if (!MathUtil.EqualsEps(node.Value, p)) {
-                    if ((new LineSegment(Point1, node.Value)).IsOnSegment(p)) {
+                    // Never insert before the first point
+                    if (node != m_points.First && (new LineSegment(Point1, node.Value)).IsOnSegment(p)) {
                         m_points.AddBefore(node, p);
                         return;
                     }

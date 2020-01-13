@@ -197,17 +197,20 @@
             m_Edges.AddLast(newtwinedge);
             Twin(newedge, newtwinedge);
 
-            //fix next/prev pointers in the original cycle
+            // fix next/prev pointers in the original cycle
             Chain(newedge, a_Edge.Next);
             Chain(a_Edge, newedge);
-
-            //fix pointers in the twin cycle
+            
+            // fix pointers in the twin cycle
             Chain(a_Edge.Twin.Prev, newtwinedge);
             Chain(newtwinedge, a_Edge.Twin);
 
-            //set faces
+            // set faces
             newedge.Face = a_Edge.Face;
             newtwinedge.Face = a_Edge.Twin.Face;
+
+            // update old leaving edge as it may point to the wrong edge now
+            oldTo.Leaving = newtwinedge;
 
             return a_Vertex;
         }
@@ -406,7 +409,7 @@
             if (face1 != face2)
             {
                 throw new GeomException("Vertices do not lie in the same face:\n"
-                    + a_Vertex1 + "\n" + a_Vertex2 + "\n" + face1 + "\n" + face2);
+                    + a_Vertex1 + "\n" + a_Vertex2 + "\nface 1: " + face1 + "\nface 2: " + face2);
             }
 
             // fix edge pointers
@@ -884,6 +887,10 @@
                     }
                 }
             }
+        }
+
+        public override string ToString() {
+            return string.Format("DCEL (Vertices: {0}, HalfEdges: {1}, Faces: {2})", VertexCount, HalfEdgeCount, FaceCount);
         }
     }
 }
