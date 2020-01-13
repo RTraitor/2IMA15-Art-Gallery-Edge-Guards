@@ -13,6 +13,8 @@ namespace ArtGallery
 
     public class ArtGalleryControllerEdge : ArtGalleryController
     {
+        [SerializeField]
+        protected GameObject m_lighthouseInvisPrefab;
 
         public Dictionary<LineSegment, ArtGalleryLightHouse> segmentsWithLighthouse = new Dictionary<LineSegment, ArtGalleryLightHouse>();
         private Dictionary<int, Face> faceIDs = new Dictionary<int, Face>();
@@ -73,7 +75,21 @@ namespace ArtGallery
             }
             Debug.Log("Level Drawer Initalised!");
 
-            int five = calcNeededNrOfEdgeGuards();
+            //int five = calcNeededNrOfEdgeGuards();
+
+            // Hardcoded visibility for one edge in the first level, quite useful so keep it in for debugging
+            /*
+            List<Face> faces = dcell.InnerFaces.ToList();
+
+            setFaceIDs(faces);
+            setEdgeIDs(LevelPolygon.Segments.ToList());
+
+            HashSet<int> temp = new HashSet<int>();
+            temp.Add(0);
+            temp.Add(1);
+            temp.Add(2);
+            visibleCompIDsPerEdgeID.Add(0, temp);
+            */
         }
 
         /// <summary>
@@ -1005,6 +1021,13 @@ namespace ArtGallery
             {
                 var lighthouseToRemove = segmentsWithLighthouse[closestSegment];
 
+                // destroy the invis lighthouses
+                foreach (var invis in lighthouseToRemove.invisList)
+                {
+                    m_solution.RemoveLighthouseInvis(invis);
+                    Destroy(invis.gameObject);
+                }
+
                 // destroy the lighthouse
                 m_solution.RemoveLighthouse(lighthouseToRemove);
                 Destroy(lighthouseToRemove.gameObject);
@@ -1050,31 +1073,44 @@ namespace ArtGallery
 
                 int edgeID = getEdgeIDByEdge(selectedEdge);
                 if (edgeID == -1) return;
-
+                
                 // safe key indexing
                 if (visibleCompIDsPerEdgeID.ContainsKey(edgeID))
                 {
 
                     HashSet<int> visibleCompIDs = visibleCompIDsPerEdgeID[edgeID];
                     List<Face> faces = new List<Face>();
+                    List<Polygon2D> visionPolys = new List<Polygon2D>();
                     foreach (var id in visibleCompIDs)
                     {
-                        faces.Add(getFaceByID(id));
+                        Face face = getFaceByID(id);
+                        faces.Add(face);
+                        visionPolys.Add(new Polygon2D(face.OuterPoints));
                     }
-
-                    List<Vector2> outerPointsAllFaces = new List<Vector2>();
-                    foreach (var face in faces)
+                    
+                    if (m_lighthouse.nrOfInvis == 0)
                     {
-                        foreach (var point in face.OuterPoints)
+                        foreach (var poly in visionPolys)
                         {
-                            outerPointsAllFaces.Add(point);
+                            // create a new lighthouseInvis from prefab (at position 0, 0 because it doesn't matter)
+                            var go = Instantiate(m_lighthouseInvisPrefab, new Vector2(0,0), Quaternion.identity) as GameObject;
+
+                            // add lighthouse to art gallery solution
+                            m_solution.AddLighthouse(go);
+                            UpdateLighthouseText();
+
+                            ArtGalleryLightHouseInvis m_invis = go.GetComponent<ArtGalleryLightHouseInvis>();
+
+                            m_invis.m_segment = selectedEdge;
+
+                            // update lighthouse visibility
+                            m_invis.VisionPoly = poly;
+                            m_invis.VisionAreaMesh.Polygon = poly;
+
+                            m_lighthouse.nrOfInvis++;
+                            m_lighthouse.invisList.Add(m_invis);
                         }
                     }
-
-                    Polygon2D vision = new Polygon2D(outerPointsAllFaces);
-                    // update lighthouse visibility
-                    m_lighthouse.VisionPoly = vision;
-                    m_lighthouse.VisionAreaMesh.Polygon = vision;
                 }
             }
         }

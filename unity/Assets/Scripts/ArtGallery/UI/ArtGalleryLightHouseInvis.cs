@@ -3,14 +3,12 @@
     using UnityEngine;
     using Util.Geometry.Polygon;
     using Util.Geometry;
-    using System.Collections.Generic;
 
     /// <summary>
-    /// Represents the lighthouse object in the game.
-    /// Holds its position as well as the corresponding visibility polygon.
-    /// Handles user clicks and drags.
+    /// Represents invisible lighthouse objects in the game,
+    /// to save the visibility polygons with edge guards.
     /// </summary>
-    public class ArtGalleryLightHouse : MonoBehaviour
+    public class ArtGalleryLightHouseInvis : MonoBehaviour
     {
         // stores a prefab object for the vision polygon
         [SerializeField]
@@ -20,10 +18,6 @@
 
         public LineSegment m_segment;
 
-        public int nrOfInvis;
-
-        public List<ArtGalleryLightHouseInvis> invisList;
-
         /// <summary>
         /// Mesh variable of the art gallery.
         /// </summary>
@@ -32,6 +26,7 @@
         /// <summary>
         /// Stores lighthouse position. Updates vision after a change in position.
         /// </summary>
+        /*
         public Vector3 Pos
         {
             get
@@ -46,6 +41,7 @@
                 m_controller.UpdateVision(this);
             }
         }
+        */
 
         /// <summary>
         /// Holds the visibility polygon.
@@ -55,15 +51,13 @@
         // Use this for initialization
         void Awake()
         {
-            nrOfInvis = 0;
-            invisList = new List<ArtGalleryLightHouseInvis>();
             m_controller = FindObjectOfType<ArtGalleryController>();
 
             // initialize the vision polygon
             GameObject go = Instantiate(m_visionAreaPrefab, new Vector3(0, 0, -1.5f), Quaternion.identity) as GameObject;
             VisionAreaMesh = go.GetComponent<ArtGalleryIsland>();
 
-            UpdateVision();
+            //UpdateVision();
         }
 
         void OnDestroy()
@@ -74,6 +68,7 @@
             }
         }
 
+        /*
         void OnMouseDown()
         {
             m_controller.SelectLighthouse(this);
@@ -83,5 +78,6 @@
         {
             m_controller.UpdateVision(this);
         }
+        */
     }
 }
