@@ -53,13 +53,9 @@ namespace ArtGallery
             base.InitLevel();
             Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
-
-            //DCEL dcell = new DCEL();
-            //foreach (LineSegment s in LevelPolygon.Segments) {
-            //    dcell.AddSegment(s);
-            //}
+            
             DCEL dcell = computeVisibilityRegions(LevelPolygon);
-            //Debug.Log(dcell);
+            
             if (m_areaDrawer != null)
             {
                 m_areaDrawer.VisibilityAreas = dcell;
@@ -79,34 +75,7 @@ namespace ArtGallery
         private DCEL computeVisibilityRegions(Polygon2D poly)
         {
             ICollection<LineSegment> segments = getVisibilitySegments(poly);
-
-            Debug.Log("Number of vertices: " + LevelPolygon.VertexCount);
-            Debug.Log("Number of vertices in Vertices: " + LevelPolygon.Vertices.Count);
-
-            DCEL temp = new DCEL();
-
-            foreach (LineSegment l in poly.Segments) {
-                segments.Add(l);                
-            }
-
-            ICollection<MultiLineSegment> mergedSegments = mergeSegments(segments);
-            int count = 0;
-            foreach (MultiLineSegment s in mergedSegments) {
-                foreach (LineSegment l in s.Segments()) {
-                    Debug.Log(l);
-                    //try {
-                        temp.AddSegment(l);
-                    //} catch (Exception e) {
-                    //    Debug.Log(e);
-                    //}
-                }
-                Debug.Log(s);
-                count++;
-                if (count == 6) {
-                    break;
-                }
-            }
-            return temp;
+            return mergeSegments(poly, segments);
         }
 
         /// <summary>
@@ -142,9 +111,15 @@ namespace ArtGallery
 
                         Vector2? closestIntersection = intersectPolygonClosest(poly, new Line(v, v2));
 
+                        //if (poly.isConvex(v) == false) { // v is reflex
+                        //    if (MathUtil.EqualsEps(v2, (Vector2) closestIntersection)) {
+                                
+                        //    }
+                        //}
+
                         if (closestIntersection != null)
                         {
-                            segments.AddFirst(new LineSegment(v2, (Vector2)closestIntersection));
+                            segments.AddFirst(new LineSegment(v2, (Vector2) closestIntersection));
                         }
 
                     }
@@ -164,9 +139,6 @@ namespace ArtGallery
         /// <returns>
         /// The closest intersection from the line's second point with the given polygon
         /// </returns>
-        // Finds the closest proper intersection
-        // l.p1 is vertex
-        // l.p2 is concave vertex
         private Vector2? intersectPolygonClosest(Polygon2D poly, Line l)
         {
             LineSegment smallestSegment = null;
@@ -249,12 +221,6 @@ namespace ArtGallery
                     continue;
                 }
 
-                // Edge Case: Skip segments whose begin and end points are BOTH colinear with the given segment
-                //if (Line.Colinear(s.Point1, s.Point2, vertexSegment.Point1)
-                //        && Line.Colinear(s.Point1, s.Point2, vertexSegment.Point2)) {
-                //    continue;
-                //}
-
                 // Skip begin and end points of segments
                 Vector2? x = vertexSegment.Intersect(s);
                 if (x != null)
@@ -266,44 +232,48 @@ namespace ArtGallery
         }
 
         /// <summary>
-        /// Creates a DCEL from a given list of Line Segments, where intersections of those
-        /// segments are transformed into DCEL vertices and where line segments between those
-        /// intersections are transformed to DCEL edges.
+        /// TODO
         /// </summary>
         /// <param name="segments">A list of line segments</param>
         /// <remarks>ASSUMPTION: Every pair of line segments has at most 1 intersection</remarks>
         /// <returns>
-        /// A DCEL created from the given list of segments TODO update
+        /// A Collection of MultiLineSegments such that no line segments intersect, and such that 
+        /// on each prior intersection, the previuosly intersecting line segments are split.
         /// </returns>
-        private ICollection<MultiLineSegment> mergeSegments(ICollection<MultiLineSegment> segments) {
-            // For each pair of segments
+        private DCEL mergeSegments(Polygon2D poly, ICollection<MultiLineSegment> segments) {
+            DCEL dcel = new DCEL();
+            foreach (LineSegment s in poly.Segments) {
+                dcel.AddSegment(s);
+            }
+                        
             foreach (MultiLineSegment s1 in segments) {
-                foreach (MultiLineSegment s2 in segments) {
-                    // Segments must not be the same
-                    if (!s1.Equals(s2))
-                    {
-                        Vector2? intersection = s1.Intersect(s2);
+                foreach (HalfEdge he in dcel.Edges) { // TODO: HalfEdge can probably also be a MultiLineSegment in segments
+                    MultiLineSegment s2 = new MultiLineSegment(he.From.Pos, he.To.Pos);
+                    Vector2? intersection = s1.Intersect(s2);
 
-                        // TODO: Handle multiple intersections in the same linesegment
-
-                        // If the segments intersect, create a new vertex at the intersecion and split the segments
-                        if (intersection != null) {
-                            s1.AddPoint((Vector2) intersection);
-                            s2.AddPoint((Vector2) intersection);
-                        }
+                    // If the segments intersect, create a new vertex at the intersection and split the segment
+                    // NB: Does not actually create the vertex; its location is only stored so it can be created later
+                    if (intersection != null) {
+                        // NB: AddPoint ignores duplicate intersections
+                        s1.AddPoint((Vector2) intersection);
                     }
                 }
+                
+                // Create new edges for each line segment in the MultiLineSegment
+                foreach (LineSegment l in s1.Segments()) {                    
+                    dcel.AddEdge(l.Point1, l.Point2);
+                }
             }
-            return segments;
-        }
+            return dcel;
+        }     
 
-        private ICollection<MultiLineSegment> mergeSegments(ICollection<LineSegment> segments) {
+        private DCEL mergeSegments(Polygon2D poly, ICollection<LineSegment> segments) {
             List<MultiLineSegment> segs = new List<MultiLineSegment>();
             // Convert the LineSegments to MultiLineSegments
             foreach (LineSegment l in segments) {
                 segs.Add(new MultiLineSegment(l));
             }
-            return mergeSegments(segs);
+            return mergeSegments(poly, segs);
         }
 
         /// <summary>
