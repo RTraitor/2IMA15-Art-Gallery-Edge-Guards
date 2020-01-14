@@ -82,7 +82,7 @@ namespace ArtGallery
             List<int> edgeBound = minNeededEdgeGuards();
             foreach (var id in edgeBound)
             {
-                Debug.Log("Edge bound: " + edgeIDs.FirstOrDefault(edge => edge.Value == id).Key);
+                Debug.Log("Edge needed for cover: " + edgeIDs.FirstOrDefault(edge => edge.Value == id).Key);
             }
             // Hardcoded visibility for one edge in the first level, quite useful so keep it in for debugging
             /*
