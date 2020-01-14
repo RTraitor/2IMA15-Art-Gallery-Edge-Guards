@@ -86,7 +86,7 @@ namespace Main
             // EdgeSets : Edges -> 2^Faces
             var EdgeSets = new Dictionary<int, HashSet<int>>();
 
-    	    // deep copy
+            // deep copy
             foreach (var edge in F.Keys)
             {
                 foreach (var face in F[edge])
@@ -178,11 +178,12 @@ namespace Main
                     // collect all faces of sets which include the isolated faces                    
                     var coveredFaces = new HashSet<int>();
                     var coveredEdges = new HashSet<int>();
+                    var selectedEdges = new HashSet<int>();
                     foreach (var face in isolated)
                     {
                         // only one set that includes the face
                         var edge = FaceSets[face].ElementAt(0);
-                        delta.Add(edge);
+                        selectedEdges.Add(edge);
 
                         foreach (var f in EdgeSets[edge])
                         {
@@ -192,6 +193,7 @@ namespace Main
                         coveredEdges.Add(edge);
 
                     }
+                    delta.AddRange(selectedEdges);
 
                     // build new FaceSets
                     var newFaceSets = new Dictionary<int, HashSet<int>>();
@@ -475,7 +477,7 @@ namespace Main
                 var new_F = t.Item2;
                 var delta = t.Item3;
 
-                if (U.Count == 0)
+                if (new_U.Count == 0)
                 {
                     return delta;
                 }
