@@ -79,8 +79,11 @@ namespace ArtGallery
 
             //Edgebound is the result of the setcover algorithm, which can be used to set as a bound for the number of lighthouses.
             //Not currently used
-            int edgeBound = calcNeededNrOfEdgeGuards();
-
+            List<int> edgeBound = minNeededEdgeGuards();
+            foreach (var id in edgeBound)
+            {
+                Debug.Log("Edge bound: " + edgeIDs.FirstOrDefault(edge => edge.Value == id).Key);
+            }
             // Hardcoded visibility for one edge in the first level, quite useful so keep it in for debugging
             /*
             List<Face> faces = dcell.InnerFaces.ToList();
@@ -1048,7 +1051,7 @@ namespace ArtGallery
         /// An approximation of the minimum number of edge guards needed for the current level's 
         /// polygon with approximation ratio O(log(n))
         /// </returns>
-        private int calcNeededNrOfEdgeGuards()
+        private List<int> minNeededEdgeGuards()
         {
             Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
@@ -1066,7 +1069,7 @@ namespace ArtGallery
             // Store visible convex components(/faces) for each edge by index
             computeVisibleComponentsPerEdge(dcell);
             // Calculate the needed number of edge guards
-            return SetCover.Solve(new HashSet<int>(faceIDs.Keys), visibleCompIDsPerEdgeID).Count;
+            return SetCover.Solve(new HashSet<int>(faceIDs.Keys), visibleCompIDsPerEdgeID);
         }
 
         public override void HandleIslandClick()
