@@ -23,6 +23,7 @@ namespace ArtGallery
         private Dictionary<int, HashSet<int>> visibleCompIDsPerEdgeID = new Dictionary<int, HashSet<int>>();
         private List<String> trace = new List<String>();
         private int countCrossesNegX = 0;
+        private int counterFaces = 0; // Debug
 
         //Unity references
         private VisibilityAreaDrawer m_areaDrawer = null;
@@ -395,7 +396,7 @@ namespace ArtGallery
             double ynew = p1.x * sin + p1.y * cos;
 
             // Translate point back
-            Vector2 newPoint = new Vector2((int)xnew + p2.x, (int)ynew + p2.y);
+            Vector2 newPoint = new Vector2((float) xnew + p2.x, (float) ynew + p2.y);
             return newPoint;
         }
 
@@ -491,11 +492,31 @@ namespace ArtGallery
                     indexPrev = vertices.Count - 1;
                 }
                 LineSegment segment = new LineSegment(vertices[indexPrev], vertices[index]);
-
-                Ray2D halfLine = new Ray2D(visiblePoints.Peek(), RotatePoint(z, visiblePoints.Peek(), 180));
-                Vector2? v = segment.Intersect(halfLine);
+                Vector2 secondPoint = RotatePoint(z, visiblePoints.Peek(), 180);
+                // Would use Ray2D but doesnt work due to bugs in Unity's code
+                //Ray2D halfLine = new Ray2D(visiblePoints.Peek(), secondPoint);
+                Line intendedHalfLine = new Line(visiblePoints.Peek(), secondPoint);
+                var perpAngle = intendedHalfLine.Angle + (Math.PI / 2);
+                Line perpendicularLine = new Line(visiblePoints.Peek(), (float) perpAngle);
+                Vector2 perpDirP1 = perpendicularLine.Point1;
+                Vector2 perpDirP2 = perpendicularLine.Point2;
+                // Need to construct a line using two points in order to be able to use the method PointRightOfLine
+                Line perpDir = new Line(perpDirP2, perpDirP1);
+                //if (counterFaces == 7)
+                //{
+                //    Debug.Log("RAYSTART: " + visiblePoints.Peek());
+                //    Debug.Log("Second point ray: " + secondPoint);
+                //    //Debug.DrawRay(visiblePoints.Peek(), secondPoint, Color.red, 60, false);
+                //    Debug.DrawLine(visiblePoints.Peek(), secondPoint, Color.red, 600, false);
+                //    Debug.DrawLine(perpDir.Point1, perpDir.Point2, Color.red, 600, false);
+                //    Debug.Log("point 1: " + perpDir.Point1);
+                //    Debug.Log("point 2: " + perpDir.Point2);
+                    
+                //}
+                Vector2? v = segment.Intersect(intendedHalfLine);
                 //If the x-axis intersection count is even and the intersection is not the origin of the ray
-                if (!v.Equals(null) && !MathUtil.EqualsEps((Vector2)v, visiblePoints.Peek()) && crossedXAxisCount % 2 == 0)
+                //Orientation of perpDir can be either way, but v has to be on the same side of perpDir as secondPoint
+                if (!v.Equals(null) && ((perpDir.PointRightOfLine((Vector2)v) && perpDir.PointRightOfLine(secondPoint)) || (!(perpDir.PointRightOfLine((Vector2)v) && !perpDir.PointRightOfLine(secondPoint)))) && !MathUtil.EqualsEps((Vector2)v, visiblePoints.Peek()) && crossedXAxisCount % 2 == 0)
                 {
                     nextElement = (index + 1) % vertices.Count;
                     visiblePoints.Push((Vector2)v);
@@ -916,9 +937,7 @@ namespace ArtGallery
                 int nextIndex = vertices.IndexOf((Vector2)nextVertex);
                 vertices.Insert(nextIndex, (Vector2)u0);
             }
-            Debug.Assert(vertices.Contains((Vector2) u0));
             int indexU0 = vertices.IndexOf(vertices.Where(vertex => MathUtil.EqualsEps(vertex, (Vector2)u0)).FirstOrDefault());
-            Debug.Log("index of u0: " + indexU0);
             // Shift the list such that u0 is at the end of the list
             while (indexU0 >= 0)
             {
@@ -930,10 +949,6 @@ namespace ArtGallery
             // Reverse the list such that the vertices are ordered counter clockwise
             // Note that u0 is now at the front of the list
             vertices.Reverse();
-            for (int i = 0; i < vertices.Count; i++)
-            {
-                Debug.Log("index: " + i + ", " + vertices[i]);
-            }
 
             Debug.Log("z: " + z.ToString());
             Debug.Log("u0: " + u0.ToString());
@@ -983,7 +998,6 @@ namespace ArtGallery
             foreach (var faceID in faceIDs)
             {
                 // For every convex component c, take a point in the face
-                Debug.Log("ME GO FACE: " + faceID.Value);
                 List<Vector2> verticesOfTriangleInFace = Triangulator.Triangulate(faceID.Value.PolygonWithoutHoles, false).Triangles.First().Vertices;
                 float centerX = 0;
                 float centerY = 0;
@@ -996,7 +1010,7 @@ namespace ArtGallery
                 centerY = centerY / 3;
 
                 Vector2 vertex = new Vector2(centerX, centerY);
-
+                counterFaces++;
                 // Compute VP(P, z); weakly visible points of P from z
                 List <Vector2> weakVisiblePoints = computeWeaklyVisiblePointsInPFromZ(LevelPolygon, vertex);
                 // For every vertex v in VP(P, z), add c to the set of the edge containing v
