@@ -15,6 +15,8 @@
     public class Polygon2D : IPolygon2D
     {
         private LinkedList<Vector2> m_vertices;
+        private HashSet<Vector2> m_convex_vertices = new HashSet<Vector2>();
+        private HashSet<Vector2> m_concave_vertices = new HashSet<Vector2>();
 
         // some cache variables for speedup
         private List<LineSegment> m_segments;
@@ -156,6 +158,8 @@
             m_convex = null;
             m_clockwise = null;
             m_simple = null;
+            m_convex_vertices = new HashSet<Vector2>();
+            m_concave_vertices = new HashSet<Vector2>();
         }
 
         /// <summary>
@@ -184,6 +188,11 @@
         {
             if (m_convex.HasValue) return m_convex.Value;
 
+            if (m_concave_vertices.Any()) {
+                m_convex = false;
+                return false;
+            }
+
             if (VertexCount < 3)
             {
                 throw new GeomException("Being convex is illdefined for polygons of 2 or less vertices");
@@ -204,9 +213,11 @@
                 if (MathUtil.EqualsEps(prevNode.Value, nextNode.Value) ||
                     dir * MathUtil.Orient2D(prevNode.Value, node.Value, nextNode.Value) > 0)
                 {
+                    m_concave_vertices.Add(node.Value);
                     m_convex = false;
                     return false;
                 }
+                m_convex_vertices.Add(node.Value);
             }
 
             m_convex = true;
@@ -394,28 +405,85 @@
             return true;
         }
 
-        public bool? isConvex(Vector2 pos) {
-            var node = m_vertices.Find(pos);
-            if (node == null)
-                return null;
-            var prevNode = node.Previous ?? m_vertices.Last;
-            var nextNode = node.Next ?? m_vertices.First;
+        /// <summary>
+        /// Checks whether a given vertex in the polygon is convex
+        /// </summary>
+        /// <param name="pos">The vertex to check</param>
+        /// <returns>
+        /// true if the given vertex is convex
+        /// false if the given vertex is not convex
+        /// null if the given vertex is not one of this polygon's vertices
+        /// </returns>
+        public bool? IsVertexConvex(Vector2 pos) {
+            // If the polygon is Convex, each vertex must be convex as well
+            if (m_convex == true) {
+                return true;
+            }
+
+            if (m_concave_vertices.Contains(pos)) {
+                return false;
+            }
+            if (m_convex_vertices.Contains(pos)) {
+                return true;
+            }
+
+            if (VertexCount < 3) {
+                throw new GeomException("Being convex is illdefined for polygons of 2 or less vertices");
+            }
 
             // flip orientation if polygon counter clockwise 
             var dir = (IsClockwise() ? 1 : -1);
 
-            // do not consider degenerate case with two equal nodes
-            if (MathUtil.EqualsEps(node.Value, nextNode.Value))
-                return true;
+            for (var node = m_vertices.First; node != null; node = node.Next) {
+                var prevNode = node.Previous ?? m_vertices.Last;
+                var nextNode = node.Next ?? m_vertices.First;
 
-            // check for dangling edges or illegal turn
-            if (MathUtil.EqualsEps(prevNode.Value, nextNode.Value) ||
-                dir * MathUtil.Orient2D(prevNode.Value, node.Value, nextNode.Value) > 0) {
-                return false;
+                // do not consider degenerate case with two equal nodes
+                if (MathUtil.EqualsEps(node.Value, nextNode.Value)) {
+                    if (node.Value.Equals(pos)) {
+                        Debug.Log("WARNING: Node with two equal values found in the Polygon!");
+                        return null;
+                    }
+                    continue;
+                }
+
+                // check for dangling edges or illegal turn
+                if (MathUtil.EqualsEps(prevNode.Value, nextNode.Value) ||
+                    dir * MathUtil.Orient2D(prevNode.Value, node.Value, nextNode.Value) > 0) {
+                    m_concave_vertices.Add(node.Value);
+                    m_convex = false;
+                    if (node.Value.Equals(pos)) {
+                        return false;
+                    }
+                } else {
+                    m_convex_vertices.Add(node.Value);
+                    if (node.Value.Equals(pos)) {
+                        return true;
+                    }
+                }
+                m_convex_vertices.Add(node.Value);
             }
-            return true;
+            return null;
         }
 
-        
+        /// <summary>
+        /// Checks whether the polygon is valid. That is, whether all vertices are at least
+        /// vertex-epsilon distance away from each other
+        /// </summary>
+        /// <returns>
+        /// false and the invalid vertices if the polygon is invalid
+        /// true and null otherwise
+        /// </returns>
+        public (bool valid, Vector2? vertex1, Vector2? vertex2) IsValid() {
+            for (var node1 = m_vertices.First; node1 != null; node1 = node1.Next) {
+                for (var node2 = m_vertices.First; node2 != null; node2 = node2.Next) {
+                    // Check if two vertices are within vertex-epsilon distance of each other
+                    if (node1 != node2 && MathUtil.EqualsEpsVertex(node1.Value, node2.Value)) {
+                        return (false, node1.Value, node2.Value);
+                    }
+                }                
+            }
+            return (true, null, null);
+        }
     }
 }

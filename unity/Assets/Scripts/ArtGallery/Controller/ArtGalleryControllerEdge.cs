@@ -58,6 +58,11 @@ namespace ArtGallery
         public override void InitLevel()
         {
             base.InitLevel();
+            var status = LevelPolygon.IsValid();
+            if (!status.valid) {
+                throw new GeomException("Vertices (" + status.vertex1 + ") and (" + status.vertex2
+                    + ") of the polygon's vertices were within EPS distance from each other!");
+            }
             RefreshVariables();
             Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
@@ -106,7 +111,7 @@ namespace ArtGallery
                         continue;
                     }
 
-                    if (poly.isConvex(v2) == false)
+                    if (poly.IsVertexConvex(v2) == false)
                     { // v2 is Reflex
 
                         LineSegment s = new LineSegment(v, v2);
@@ -119,7 +124,7 @@ namespace ArtGallery
 
                         Vector2? closestIntersection = intersectPolygonClosest(poly, new Line(v, v2));
 
-                        //if (poly.isConvex(v) == false) { // v is reflex
+                        //if (poly.IsVertexConvex(v) == false) { // v is reflex
                         //    if (MathUtil.EqualsEps(v2, (Vector2) closestIntersection)) {
                                 
                         //    }
@@ -273,8 +278,16 @@ namespace ArtGallery
                 // Create new edges for each line segment in the MultiLineSegment
                 foreach (LineSegment l in s1.Segments()) {                    
                     dcel.AddEdge(l.Point1, l.Point2);
+                    try {
+                        dcel.AddEdge(l.Point1, l.Point2);
+                    } catch (GeomException e) {
+                        Debug.DrawLine(l.Point1, l.Point2, Color.magenta, 99999999, false);
+                        Debug.LogWarning(e);
+                        return dcel;
+                    }
                 }
             }
+            Debug.Log(dcel);
             return dcel;
         }     
 

@@ -316,8 +316,8 @@ public class LoadLevelEditor : ScriptedImporter
 
         coords = coords
             .Select(p => new Vector2(
-                (p[0] - (rect.xMin + rect.width / 2f) + Random.Range(-rnd, rnd)) * scale,
-                (p[1] - (rect.yMin + rect.height / 2f) + Random.Range(-rnd, rnd)) * scale))
+                (p[0] - (rect.xMin + rect.width / 2f) /*+ Random.Range(-rnd, rnd)*/) * scale,
+                (p[1] - (rect.yMin + rect.height / 2f) /*+ Random.Range(-rnd, rnd)*/) * scale))
             .ToList();
     }
 }

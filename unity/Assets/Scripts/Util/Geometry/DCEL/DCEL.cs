@@ -170,12 +170,12 @@
             {
                 throw new GeomException("Point should lie on edge");
             }
-            if (MathUtil.EqualsEps(a_Edge.From.Pos, a_Point))
+            if (MathUtil.EqualsEpsVertex(a_Edge.From.Pos, a_Point))
             {
                 return a_Edge.From;
                 //throw new GeomException("Requested insertion in Edge on From.Pos");
             }
-            if (MathUtil.EqualsEps(a_Edge.To.Pos, a_Point))
+            if (MathUtil.EqualsEpsVertex(a_Edge.To.Pos, a_Point))
             {
                 return a_Edge.To;
                 //throw new GeomException("Requested insertion in Edge on To.Pos");
@@ -211,6 +211,8 @@
 
             // update old leaving edge as it may point to the wrong edge now
             oldTo.Leaving = newtwinedge;
+
+            // TODO: Check if references are properly cleaned up (memory leak)
 
             return a_Vertex;
         }
@@ -255,11 +257,12 @@
                 if (intersection.HasValue)
                 {
                     // check for inproper intersections with edge
-                    if (MathUtil.EqualsEps(edge.From.Pos, intersection.Value))
+                    if (MathUtil.EqualsEpsVertex(edge.From.Pos, intersection.Value))
                     {
                         segmentVertices.Add(edge.From);
+                        Debug.Log("\tA");
                     }
-                    else if (MathUtil.EqualsEps(edge.To.Pos, intersection.Value))
+                    else if (MathUtil.EqualsEpsVertex(edge.To.Pos, intersection.Value))
                     {
                         segmentVertices.Add(edge.To);
                     }
