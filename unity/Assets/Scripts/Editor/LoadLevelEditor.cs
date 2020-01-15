@@ -16,7 +16,7 @@ using ConvexHull;
 [ScriptedImporter(1, "ipe")]
 public class LoadLevelEditor : ScriptedImporter
 {
-    private readonly float agSIZE = 8f;
+    private readonly float agSIZE = 80f;
     private readonly float ktSIZE = 6f;
     private readonly float divSIZE = 5f;
 
