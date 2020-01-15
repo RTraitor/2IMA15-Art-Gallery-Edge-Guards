@@ -260,7 +260,6 @@
                     if (MathUtil.EqualsEpsVertex(edge.From.Pos, intersection.Value))
                     {
                         segmentVertices.Add(edge.From);
-                        Debug.Log("\tA");
                     }
                     else if (MathUtil.EqualsEpsVertex(edge.To.Pos, intersection.Value))
                     {

@@ -61,7 +61,8 @@ namespace ArtGallery
             var status = LevelPolygon.IsValid();
             if (!status.valid) {
                 throw new GeomException("Vertices (" + status.vertex1 + ") and (" + status.vertex2
-                    + ") of the polygon's vertices were within EPS distance from each other!");
+                    + ") of the polygon's vertices were within EPS distance from each other!\n"
+                    + "Note: Perhaps you created a polygon with stacked vertices?");
             }
             RefreshVariables();
             Debug.Log("Initialising Level Drawer...");
@@ -100,21 +101,19 @@ namespace ArtGallery
         /// </returns>
         private ICollection<LineSegment> getVisibilitySegments(Polygon2D poly)
         {
-            LinkedList<LineSegment> segments = new LinkedList<LineSegment>();
+            HashSet<LineSegment> segments = new HashSet<LineSegment>();
 
-            foreach (Vector2 v in poly.Vertices)
+            foreach (Vector2 v1 in poly.Vertices)
             {
                 foreach (Vector2 v2 in poly.Vertices)
                 {
-                    if (v.Equals(v2))
-                    {
+                    if (v1.Equals(v2)) {
                         continue;
                     }
 
-                    if (poly.IsVertexConvex(v2) == false)
-                    { // v2 is Reflex
+                    if (poly.IsVertexConvex(v2) == false) { // v2 is Reflex
 
-                        LineSegment s = new LineSegment(v, v2);
+                        LineSegment s = new LineSegment(v1, v2);
                         if (isIntersectPolygon(poly, s))
                         {
                             // Skip if the two vertices cannot see each other.
@@ -122,19 +121,22 @@ namespace ArtGallery
                             continue;
                         }
 
-                        Vector2? closestIntersection = intersectPolygonClosest(poly, new Line(v, v2));
+                        Vector2? closestIntersection = intersectPolygonClosest(poly, new Line(v1, v2));
 
-                        //if (poly.IsVertexConvex(v) == false) { // v is reflex
-                        //    if (MathUtil.EqualsEps(v2, (Vector2) closestIntersection)) {
+                        if (closestIntersection != null) {
+                            if (poly.IsVertexConvex((Vector2) closestIntersection) == false) {
+                                // The intersection is on one of the polygon's vertices and that vertex is reflex
                                 
-                        //    }
-                        //}
+                                if (segments.Contains(new LineSegment(v2, (Vector2) closestIntersection), new UndirectedSegmentComparer())) {
+                                    // The line segment was already included in the set (possibly with the begin and end points swapped)
+                                    continue;
+                                }
 
-                        if (closestIntersection != null)
-                        {
-                            segments.AddFirst(new LineSegment(v2, (Vector2) closestIntersection));
+                                
+                            }
+
+                            segments.Add(new LineSegment(v2, (Vector2) closestIntersection));
                         }
-
                     }
                 }
             }
@@ -276,12 +278,12 @@ namespace ArtGallery
                 }
                 
                 // Create new edges for each line segment in the MultiLineSegment
-                foreach (LineSegment l in s1.Segments()) {                    
-                    dcel.AddEdge(l.Point1, l.Point2);
+                foreach (LineSegment l in s1.Segments()) {      
                     try {
                         dcel.AddEdge(l.Point1, l.Point2);
                     } catch (GeomException e) {
-                        Debug.DrawLine(l.Point1, l.Point2, Color.magenta, 99999999, false);
+                        Debug.DrawLine(l.Point1, l.Point2, Color.magenta, 10, false);
+                        Debug.LogWarning("Exception when inserting segment (" + l.Point1 + ", " + l.Point2 + ")");
                         Debug.LogWarning(e);
                         return dcel;
                     }

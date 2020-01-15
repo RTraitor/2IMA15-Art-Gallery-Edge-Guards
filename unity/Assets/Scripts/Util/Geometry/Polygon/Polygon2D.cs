@@ -12,8 +12,7 @@
     /// Simple 2D polygon class without holes.
     /// We represent the polygon internally as a linked list of vertices.
     /// </summary>
-    public class Polygon2D : IPolygon2D
-    {
+    public class Polygon2D : IPolygon2D, IEqualityComparer<Vector2> {
         private LinkedList<Vector2> m_vertices;
         private HashSet<Vector2> m_convex_vertices = new HashSet<Vector2>();
         private HashSet<Vector2> m_concave_vertices = new HashSet<Vector2>();
@@ -420,11 +419,18 @@
                 return true;
             }
 
-            if (m_concave_vertices.Contains(pos)) {
+            // Vertex is in the cache
+            if (m_concave_vertices.Contains(pos, this)) {
                 return false;
             }
-            if (m_convex_vertices.Contains(pos)) {
+            if (m_convex_vertices.Contains(pos, this)) {
                 return true;
+            }
+
+            // All vertices are cached and the vector is not in one of the sets
+            // ==> vector is not one of the vertices
+            if (m_vertices.Count() <= m_concave_vertices.Count() + m_convex_vertices.Count()) {
+                return null;
             }
 
             if (VertexCount < 3) {
@@ -440,7 +446,7 @@
 
                 // do not consider degenerate case with two equal nodes
                 if (MathUtil.EqualsEps(node.Value, nextNode.Value)) {
-                    if (node.Value.Equals(pos)) {
+                    if (Equals(node.Value, pos)) {
                         Debug.Log("WARNING: Node with two equal values found in the Polygon!");
                         return null;
                     }
@@ -452,12 +458,12 @@
                     dir * MathUtil.Orient2D(prevNode.Value, node.Value, nextNode.Value) > 0) {
                     m_concave_vertices.Add(node.Value);
                     m_convex = false;
-                    if (node.Value.Equals(pos)) {
+                    if (Equals(node.Value, pos)) {
                         return false;
                     }
                 } else {
                     m_convex_vertices.Add(node.Value);
-                    if (node.Value.Equals(pos)) {
+                    if (Equals(node.Value, pos)) {
                         return true;
                     }
                 }
@@ -484,6 +490,15 @@
                 }                
             }
             return (true, null, null);
+        }
+
+
+        public bool Equals(Vector2 v1, Vector2 v2) {
+            return MathUtil.EqualsEpsVertex(v1, v2);
+        }
+
+        public int GetHashCode(Vector2 v) {
+            return v.GetHashCode();
         }
     }
 }
