@@ -283,6 +283,7 @@ namespace ArtGallery
             var anglePoint = MathUtil.Angle(vertex, vertex + new Vector2(1f, 0f), p);
 
             bool angleBeginEndIsConvex = angleBegin - angleEnd < MathUtil.PI;
+            bool angleEndBeginIsConvex = angleEnd - angleBegin > -MathUtil.PI;
             //Debug.Log(p + " (p) -> " + anglePoint);
 
             if (angleEnd < anglePoint && anglePoint < angleBegin && angleBeginEndIsConvex) {
