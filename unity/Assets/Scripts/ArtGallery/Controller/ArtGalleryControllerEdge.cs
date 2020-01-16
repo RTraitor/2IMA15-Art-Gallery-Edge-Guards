@@ -11,6 +11,7 @@ namespace ArtGallery
     using Util.Math;
     using Util.Algorithms.Triangulation;
     using Main;
+    using Util.Algorithms.Polygon;
 
     public class ArtGalleryControllerEdge : ArtGalleryController
     {
@@ -1015,7 +1016,7 @@ namespace ArtGallery
                 Vector2 vertex = new Vector2(centerX, centerY);
                 counterFaces++;
                 // Compute VP(P, z); weakly visible points of P from z
-                List <Vector2> weakVisiblePoints = computeWeaklyVisiblePointsInPFromZ(LevelPolygon, vertex);
+                List <Vector2> weakVisiblePoints = Visibility.Vision(LevelPolygon, vertex).Vertices.ToList();
                 // For every vertex v in VP(P, z), add c to the set of the edge containing v
                 foreach (var v in weakVisiblePoints)
                 {
