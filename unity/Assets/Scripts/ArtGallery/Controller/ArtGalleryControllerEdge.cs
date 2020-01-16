@@ -68,7 +68,7 @@ namespace ArtGallery
             Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
             
-            DCEL dcell = computeVisibilityRegions(LevelPolygon);
+            DCEL dcell = ComputeVisibilityRegions(LevelPolygon);
             
             if (m_areaDrawer != null)
             {
@@ -86,10 +86,10 @@ namespace ArtGallery
         /// <returns>
         /// A DCEL containing the visibility regions of a polygon
         /// </returns>
-        private DCEL computeVisibilityRegions(Polygon2D poly)
+        private DCEL ComputeVisibilityRegions(Polygon2D poly)
         {
-            ICollection<LineSegment> segments = getVisibilitySegments(poly);
-            return mergeSegments(poly, segments);
+            ICollection<LineSegment> segments = GetVisibilitySegments(poly);
+            return TransformSegmentsIntoDCEL(poly, segments);
         }
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace ArtGallery
         /// <returns>
         /// The (overlapping) Line Segments that are needed to compute the given polygon's visbility regions
         /// </returns>
-        private ICollection<LineSegment> getVisibilitySegments(Polygon2D poly)
+        private ICollection<LineSegment> GetVisibilitySegments(Polygon2D poly)
         {
             HashSet<LineSegment> segments = new HashSet<LineSegment>();
 
@@ -114,27 +114,23 @@ namespace ArtGallery
                     if (poly.IsVertexConvex(v2) == false) { // v2 is Reflex
 
                         LineSegment s = new LineSegment(v1, v2);
-                        if (isIntersectPolygon(poly, s))
+                        if (EntersOutsidePolygon(poly, s))
                         {
                             // Skip if the two vertices cannot see each other.
                             // NOTE: This includes colinear points (meaning that only 'adjacent' colinear points are not skipped)
                             continue;
                         }
 
-                        Vector2? closestIntersection = intersectPolygonClosest(poly, new Line(v1, v2));
+                        Vector2? closestIntersection = GetClosestIntersectionWithPolygon(poly, new Line(v1, v2));
 
                         if (closestIntersection != null) {
                             if (poly.IsVertexConvex((Vector2) closestIntersection) == false) {
                                 // The intersection is on one of the polygon's vertices and that vertex is reflex
-                                
                                 if (segments.Contains(new LineSegment(v2, (Vector2) closestIntersection), new UndirectedSegmentComparer())) {
                                     // The line segment was already included in the set (possibly with the begin and end points swapped)
                                     continue;
                                 }
-
-                                
                             }
-
                             segments.Add(new LineSegment(v2, (Vector2) closestIntersection));
                         }
                     }
@@ -154,7 +150,7 @@ namespace ArtGallery
         /// <returns>
         /// The closest intersection from the line's second point with the given polygon
         /// </returns>
-        private Vector2? intersectPolygonClosest(Polygon2D poly, Line l)
+        private Vector2? GetClosestIntersectionWithPolygon(Polygon2D poly, Line l)
         {
             LineSegment smallestSegment = null;
             foreach (LineSegment s in poly.Segments)
@@ -219,7 +215,7 @@ namespace ArtGallery
 
 
         /// <summary>
-        /// Checks whether a given segment between a polygon's vertices intersects at least one of that polygon's segments
+        /// Checks whether a given segment between a polygon's vertices goes outside of the Polygon's boundary
         /// </summary>
         /// <param name="poly">The polygon to check for intersections with</param>
         /// <param name="vertexSegment">A line segment from one of poly's vertices to another of poly's vertices
@@ -228,42 +224,127 @@ namespace ArtGallery
         /// true iff the given segment overlaps at least one of the polygon's segments of vertices,
         /// ignoring any segments with a shared begin or end point with vertexSegment
         /// </returns>
-        private bool isIntersectPolygon(Polygon2D poly, LineSegment vertexSegment)
+        private bool EntersOutsidePolygon(Polygon2D poly, LineSegment vertexSegment)
         {
+            // Stores the segments adjacent to the vertexSegment's begin point
+            LineSegment l1 = null;
+            LineSegment l2 = null;
             foreach (LineSegment s in poly.Segments)
             {
                 // Skip the segments that have a begin or end point in common with the given segment
-                if (s.Point1 == vertexSegment.Point1 || s.Point2 == vertexSegment.Point2
-                        || s.Point1 == vertexSegment.Point2 || s.Point2 == vertexSegment.Point1)
-                {
+                if (s.Point2 == vertexSegment.Point2 || s.Point1 == vertexSegment.Point2
+                        || s.Point1 == vertexSegment.Point1 || s.Point2 == vertexSegment.Point1) {
+
+                    l1 = (s.Point2 == vertexSegment.Point1) ? s : l1;
+                    l2 = (s.Point1 == vertexSegment.Point1) ? s : l2;
                     continue;
                 }
 
-                // Skip begin and end points of segments
                 Vector2? x = vertexSegment.Intersect(s);
                 if (x != null)
                 {
+                    // An intersection with a non-adjacent segment was found
                     return true;
                 }
+            }
+
+            // The polygon's boundaries did not intersect with the segment
+            // NB: The vertexSegment can still be COMPLETELY outside the polygon
+            if ((poly.IsVertexConvex(vertexSegment.Point1) == true
+                        && PointIsOnConvexSide(vertexSegment.Point2, l1.Point1, l1.Point2, l2.Point2) == false)
+                    || (poly.IsVertexConvex(vertexSegment.Point1) == false
+                        && PointIsOnConvexSide(vertexSegment.Point2, l1.Point1, l1.Point2, l2.Point2) == true)) {
+                // The vertexSegment was completely outside the polygon
+                return true;
             }
             return false;
         }
 
         /// <summary>
-        /// TODO
+        /// Checks whether a given point is on the convex side of two line segments originating from the same point.
         /// </summary>
-        /// <param name="segments">A list of line segments</param>
-        /// <remarks>ASSUMPTION: Every pair of line segments has at most 1 intersection</remarks>
+        /// <param name="p">The point to check</param>
+        /// <param name="begin">The begin point of the segment entering the vertex</param>
+        /// <param name="vertex">The end and begin point of two distinict line segments</param>
+        /// <param name="end">The end point of the segment leaving vertex</param>
         /// <returns>
-        /// A Collection of MultiLineSegments such that no line segments intersect, and such that 
-        /// on each prior intersection, the previuosly intersecting line segments are split.
+        /// true if p is on the "convex" side of the line segments (begin, vertex) and (vertex, end)
+        /// false if p is on the "concave" side of the line segments (begin, vertex) and (vertex, end)
+        /// null if the given point is on a ray startin from vertex in the direction of begin and/or end points
         /// </returns>
-        private DCEL mergeSegments(Polygon2D poly, ICollection<MultiLineSegment> segments) {
+        public bool? PointIsOnConvexSide(Vector2 p, Vector2 begin, Vector2 vertex, Vector2 end) {
+            // If the point is colinear with the begin/end point and vertex in the correct direction
+            if (IsOnRay(vertex, begin, p) || IsOnRay(vertex, end, p)) {
+                return null;
+            }
+
+            var angleBegin = MathUtil.Angle(vertex, vertex + new Vector2(1f, 0f), begin);
+            var angleEnd = MathUtil.Angle(vertex, vertex + new Vector2(1f, 0f), end);
+            var anglePoint = MathUtil.Angle(vertex, vertex + new Vector2(1f, 0f), p);
+
+            bool angleBeginEndIsConvex = angleBegin - angleEnd < MathUtil.PI;
+            //Debug.Log(p + " (p) -> " + anglePoint);
+
+            if (angleEnd < anglePoint && anglePoint < angleBegin && angleBeginEndIsConvex) {
+                return true;
+            }
+            if (angleBegin < anglePoint && anglePoint < angleEnd && angleEndBeginIsConvex) {
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Checks whether a given point is on a ray starting in a given point towards a given direction
+        /// </summary>
+        /// <param name="origin">The origin of the ray</param>
+        /// <param name="direction">The direction of the ray</param>
+        /// <param name="point">The point to check</param>
+        /// <returns>
+        /// true if p is on the ray
+        /// false otherwise
+        /// </returns>
+        public bool IsOnRay(Vector2 origin, Vector2 direction, Vector2 point) {
+            return (new LineSegment(origin, direction)).IsOnSegment(point) || (new LineSegment(origin, point)).IsOnSegment(direction);
+        }
+
+        /// <summary>
+        /// Transforms a given set of Line Segments into MultiLineSegments consisting of just the segment's begin and end points.
+        /// </summary>
+        /// <param name="segments">The collection of Line Segments to transform</param>
+        /// <returns>
+        /// A collection of MultiLineSegments, where there exists exactly one multilinesegment for each given line segment
+        /// </returns>
+        private ICollection<MultiLineSegment> CreateBasicMultiLineSegments(ICollection<LineSegment> segments) {
+            List<MultiLineSegment> segs = new List<MultiLineSegment>();
+            // Convert the LineSegments to MultiLineSegments
+            foreach (LineSegment l in segments) {
+                segs.Add(new MultiLineSegment(l));
+            }
+            return segs;
+        }
+
+        /// <summary>
+        /// Transforms a given set of (possibly overlapping) line segments into a DCEL, using a given
+        /// polygon as the DCEL's boundary.
+        /// </summary>
+        /// <param name="poly">The polygon to use as a base for the DCEL</param>
+        /// <param name="segments">A list of (possibly intersecting) line segments</param>
+        /// <remarks>ASSUMPTION: Every pair of line segments has at most 1 intersection</remarks>
+        /// <remarks>If an Exception occurs during creation of the DCEL, creation is stopped and a magenta-coloured
+        /// line segment is drawn on the line segment that caused the Exception. Note that all insertions made prior to
+        /// the Exception are kept.</remarks>
+        /// <returns>
+        /// A DCEL with the given polygon as a boundary and the given set of line segments as its interior edges.
+        /// </returns>
+        private DCEL TransformSegmentsIntoDCEL(Polygon2D poly, ICollection<LineSegment> lineSegments) {
+            ICollection<MultiLineSegment> segments = CreateBasicMultiLineSegments(lineSegments);
+            
             DCEL dcel = new DCEL();
             foreach (LineSegment s in poly.Segments) {
                 dcel.AddSegment(s);
             }
-                        
+            
             foreach (MultiLineSegment s1 in segments) {
                 foreach (HalfEdge he in dcel.Edges) { // TODO: HalfEdge can probably also be a MultiLineSegment in segments
                     MultiLineSegment s2 = new MultiLineSegment(he.From.Pos, he.To.Pos);
@@ -282,7 +363,7 @@ namespace ArtGallery
                     try {
                         dcel.AddEdge(l.Point1, l.Point2);
                     } catch (GeomException e) {
-                        Debug.DrawLine(l.Point1, l.Point2, Color.magenta, 10, false);
+                        Debug.DrawLine(l.Point1, l.Point2, Color.magenta, 60, false);
                         Debug.LogWarning("Exception when inserting segment (" + l.Point1 + ", " + l.Point2 + ")");
                         Debug.LogWarning(e);
                         return dcel;
@@ -291,16 +372,6 @@ namespace ArtGallery
             }
             Debug.Log(dcel);
             return dcel;
-        }     
-
-        private DCEL mergeSegments(Polygon2D poly, ICollection<LineSegment> segments) {
-            List<MultiLineSegment> segs = new List<MultiLineSegment>();
-            // Convert the LineSegments to MultiLineSegments
-            foreach (LineSegment l in segments)
-            {
-                segs.Add(new MultiLineSegment(l));
-            }
-            return mergeSegments(poly, segs);
         }
 
         /// <summary>

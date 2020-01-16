@@ -159,7 +159,7 @@
 
             if (SignedAngle < -PI- EPS || SignedAngle > PI + EPS)
             {
-                throw new Exception("Invalid angle");
+                throw new Exception("Invalid angle: " + SignedAngle);
             }
 
             if (SignedAngle >= 0) return SignedAngle;

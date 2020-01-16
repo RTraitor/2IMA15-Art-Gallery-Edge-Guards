@@ -456,18 +456,21 @@
                 // check for dangling edges or illegal turn
                 if (MathUtil.EqualsEps(prevNode.Value, nextNode.Value) ||
                     dir * MathUtil.Orient2D(prevNode.Value, node.Value, nextNode.Value) > 0) {
-                    m_concave_vertices.Add(node.Value);
+                    if (!m_concave_vertices.Contains(node.Value, this)) {
+                        m_concave_vertices.Add(node.Value);
+                    }
                     m_convex = false;
                     if (Equals(node.Value, pos)) {
                         return false;
                     }
                 } else {
-                    m_convex_vertices.Add(node.Value);
+                    if (!m_convex_vertices.Contains(node.Value, this)) {
+                        m_convex_vertices.Add(node.Value);
+                    }
                     if (Equals(node.Value, pos)) {
                         return true;
                     }
                 }
-                m_convex_vertices.Add(node.Value);
             }
             return null;
         }
