@@ -278,18 +278,27 @@ namespace ArtGallery
                 return null;
             }
 
+            // TODO: Add support when begin, vertex, and end are colinear (I.e. the angle between begin and end is exactly 180 degrees)
+
             var angleBegin = MathUtil.Angle(vertex, vertex + new Vector2(1f, 0f), begin);
             var angleEnd = MathUtil.Angle(vertex, vertex + new Vector2(1f, 0f), end);
             var anglePoint = MathUtil.Angle(vertex, vertex + new Vector2(1f, 0f), p);
 
-            bool angleBeginEndIsConvex = angleBegin - angleEnd < MathUtil.PI;
-            bool angleEndBeginIsConvex = angleEnd - angleBegin > -MathUtil.PI;
+            // Ensure that the end angle is larger than the begin angle
+            if (angleBegin > angleEnd) {
+                angleBegin -= MathUtil.PI2;
+                anglePoint -= MathUtil.PI2;
+            }
+
+            // Check whether the angle(begin, vertex, end) is convex
+            bool angleBeginEndIsConvex = (angleEnd - angleBegin) < MathUtil.PI;
+
+            //Debug.Log(begin + " (begin) -> " + angleBegin);
+            //Debug.Log(end + " (end) -> " + angleEnd);
             //Debug.Log(p + " (p) -> " + anglePoint);
 
-            if (angleEnd < anglePoint && anglePoint < angleBegin && angleBeginEndIsConvex) {
-                return true;
-            }
-            if (angleBegin < anglePoint && anglePoint < angleEnd && angleEndBeginIsConvex) {
+            // The begin point is between the begin and end angles, and that angle is convex
+            if (angleBegin < anglePoint && anglePoint < angleEnd && angleBeginEndIsConvex) {
                 return true;
             }
             return false;

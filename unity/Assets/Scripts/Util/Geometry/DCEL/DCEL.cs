@@ -212,8 +212,6 @@
             // update old leaving edge as it may point to the wrong edge now
             oldTo.Leaving = newtwinedge;
 
-            // TODO: Check if references are properly cleaned up (memory leak)
-
             return a_Vertex;
         }
 
