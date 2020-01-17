@@ -149,6 +149,7 @@ namespace ArtGallery
         /// TODO: change to Ray2D rather than Line</param>
         /// <returns>
         /// The closest intersection from the line's second point with the given polygon
+        /// or null if no such intersection exists (or the second point is the intersection)
         /// </returns>
         private Vector2? GetClosestIntersectionWithPolygon(Polygon2D poly, Line l)
         {
@@ -163,8 +164,7 @@ namespace ArtGallery
                 {
                     // Exception: if a segment starts in l2 and is on the line, there is no intersection
                     if (Line.Colinear(l.Point1, s.Point1, s.Point2)
-                            && !(l.Point1 == s.Point1 || l.Point1 == s.Point2))
-                    {
+                            && !(l.Point1 == s.Point1 || l.Point1 == s.Point2)){
                         return null;
                     }
                     continue;
@@ -287,6 +287,8 @@ namespace ArtGallery
             // Ensure that the end angle is larger than the begin angle
             if (angleBegin > angleEnd) {
                 angleBegin -= MathUtil.PI2;
+            }
+            if (anglePoint > angleEnd) {
                 anglePoint -= MathUtil.PI2;
             }
 
@@ -297,10 +299,16 @@ namespace ArtGallery
             //Debug.Log(end + " (end) -> " + angleEnd);
             //Debug.Log(p + " (p) -> " + anglePoint);
 
-            // The begin point is between the begin and end angles, and that angle is convex
+            // The point is between the begin and end angles, and that angle is convex
             if (angleBegin < anglePoint && anglePoint < angleEnd && angleBeginEndIsConvex) {
                 return true;
             }
+
+            // The point is not between the begin and end angles, and that angle is concave
+            if (!(angleBegin < anglePoint && anglePoint < angleEnd) && !angleBeginEndIsConvex) {
+                return true;
+            }
+
             return false;
         }
 
