@@ -470,16 +470,6 @@ namespace Main
                 }
             }
 
-            for (int i = 0; i < table.GetLength(0); i++)
-            {
-                var str = "";
-                for (int j = 0; j < table.GetLength(1); j++)
-                {
-                    str += table[i, j] + " ";
-                }
-                Debug.Log(str);
-            }
-
             // recover the solution
             n = (int)Math.Pow(2, U.Count) - 1;
             var s = table.GetLength(1) - 1;
