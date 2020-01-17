@@ -153,6 +153,10 @@ namespace ArtGallery
         /// </returns>
         private Vector2? GetClosestIntersectionWithPolygon(Polygon2D poly, Line l)
         {
+            // Stores the segments adjacent to the line's second point
+            LineSegment l1 = null;
+            LineSegment l2 = null;
+
             LineSegment smallestSegment = null;
             foreach (LineSegment s in poly.Segments)
             {
@@ -166,6 +170,21 @@ namespace ArtGallery
                     if (Line.Colinear(l.Point1, s.Point1, s.Point2)
                             && !(l.Point1 == s.Point1 || l.Point1 == s.Point2)){
                         return null;
+                    }
+
+                    l1 = (s.Point2 == l.Point2) ? s : l1;
+                    l2 = (s.Point1 == l.Point2) ? s : l2;
+                    if (l1 != null && l2 != null) {
+                        // 'Rotate' the first point of the line 180 degrees around the line's second point
+                        Vector2 p = new Vector2(l.Point2.x + (l.Point2.x - l.Point1.x), l.Point2.y + (l.Point2.y - l.Point1.y));
+                        if (PointIsOnConvexSide(p, l1.Point1, l1.Point2, l2.Point2) == true) {
+                            // The line 'leaves' the vertex on the convex side. I.e. it goes outside the polygon!
+                            return null;
+                        }
+                        // The line 'leaves' the vertex on the concave side. I.e. it stays inside the polygon.
+                        // Reset l1 and l2 as there is no need to repeat the previous calculation
+                        l1 = null;
+                        l2 = null;
                     }
                     continue;
                 }
@@ -295,9 +314,9 @@ namespace ArtGallery
             // Check whether the angle(begin, vertex, end) is convex
             bool angleBeginEndIsConvex = (angleEnd - angleBegin) < MathUtil.PI;
 
-            //Debug.Log(begin + " (begin) -> " + angleBegin);
-            //Debug.Log(end + " (end) -> " + angleEnd);
-            //Debug.Log(p + " (p) -> " + anglePoint);
+            Debug.Log("\t" + begin + " (begin2) -> " + angleBegin);
+            Debug.Log("\t" + end + " (end2) -> " + angleEnd);
+            Debug.Log("\t" + p + " (p2) -> " + anglePoint);
 
             // The point is between the begin and end angles, and that angle is convex
             if (angleBegin < anglePoint && anglePoint < angleEnd && angleBeginEndIsConvex) {
