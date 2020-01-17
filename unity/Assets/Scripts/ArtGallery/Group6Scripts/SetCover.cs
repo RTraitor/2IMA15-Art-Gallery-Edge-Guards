@@ -420,6 +420,99 @@ namespace Main
             return result;
         }
 
+        private static List<int> ExactSetCoverDP(HashSet<int> U, Dictionary<int, HashSet<int>> F)
+        {
+            int n = U.Count;
+            var sets = new int[F.Count];
+            var table = new int[(int)Math.Pow(2, n), F.Count + 1];
+
+            for (int i = 0; i < F.Count; i++)
+            {
+                int k = 0;
+                foreach (var j in F.ElementAt(i).Value)
+                {
+                    k += (int)Math.Pow(2, j);
+                }
+                sets[i] = k;
+            }
+
+            for (int j = 0; j < table.GetLength(1); j++)
+            {
+                table[0, j] = 0;
+            }
+
+            for (int i = 1; i < table.GetLength(0); i++)
+            {
+                // "infinity"
+                table[i, 0] = int.MaxValue;
+            }
+
+            for (int i = 1; i < table.GetLength(0); i++)
+            {
+                for (int j = 1; j < table.GetLength(1); j++)
+                {
+                    var a = table[i, j - 1];
+                    // set subtraction in bits
+                    var new_index = i & ~sets[j - 1];
+
+                    var b = table[new_index, j - 1];
+                    // prevent overflow
+                    if (b < int.MaxValue) b++;
+
+                    if (a < b)
+                    {
+                        table[i, j] = a;
+                    }
+                    else
+                    {
+                        table[i, j] = b;
+                    }
+                }
+            }
+
+            for (int i = 0; i < table.GetLength(0); i++)
+            {
+                var str = "";
+                for (int j = 0; j < table.GetLength(1); j++)
+                {
+                    str += table[i, j] + " ";
+                }
+                Debug.Log(str);
+            }
+
+            // recover the solution
+            n = (int)Math.Pow(2, U.Count) - 1;
+            var s = table.GetLength(1) - 1;
+            var res = new List<int>();
+            while (n != 0)
+            {
+                if (s == 0)
+                {
+                    throw new Exception("unsatisfiable set conver instance");
+                }
+                var a = table[n, s - 1];
+
+                var index = n & ~sets[s - 1];
+                var b = table[index, s - 1];
+                if (b < int.MaxValue) b++;
+
+                if (a <= b)
+                {
+                    // we don't need set s
+                    s -= 1;
+                }
+                else
+                {
+                    // selecting s is a correct choice
+                    res.Add(F.ElementAt(s - 1).Key);
+                    n = index;
+                    s -= 1;
+                }
+            }
+
+            return res;
+        }
+
         /// <summary>
         /// Greedily solve Set Cover
         /// </summary>
