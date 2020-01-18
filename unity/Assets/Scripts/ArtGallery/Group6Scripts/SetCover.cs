@@ -481,7 +481,6 @@ namespace Main
                     throw new Exception("unsatisfiable set conver instance");
                 }
                 var a = table[n, s - 1];
-
                 var index = n & ~sets[s - 1];
                 var b = table[index, s - 1];
                 if (b < int.MaxValue) b++;
@@ -551,33 +550,35 @@ namespace Main
         /// </returns>
         public static List<int> Solve(HashSet<int> U, Dictionary<int, HashSet<int>> F)
         {
-            // check if input is within bounds
-            if (F.Count <= 25 && U.Count <= 500)
-            {
-                // reduce it
-                var t = Reduce(U, F);
-                var new_U = t.Item1;
-                var new_F = t.Item2;
-                var delta = t.Item3;
+            var t = Reduce(U, F);
+            var newU = t.Item1;
+            var newF = t.Item2;
+            var delta = t.Item3;
 
-                if (new_U.Count == 0)
-                {
-                    return delta;
-                }
-                else
-                {
-                    var result = ExactSetCover(new_U, new_F);
-                    foreach (var id in result)
-                    {
-                        delta.Add(id);
-                    }
-                    return delta;
-                }
+            if (newU.Count == 0) return delta;
+
+            List<int> result;
+            if (newU.Count <= newF.Count && newU.Count <= 30)
+            {
+                Debug.Log("DP time");
+                result = ExactSetCoverDP(newU, newF);
+            }
+            else if (newF.Count <= newU.Count && newF.Count <= 30)
+            {
+                Debug.Log("Brute force time");
+                result = ExactSetCover(newU, newF);
             }
             else
             {
-                return GreedySetCover(U, F);
+                Debug.Log("Greedy time");
+                result = GreedySetCover(newU, newF);
             }
+
+            foreach (var id in result)
+            {
+                delta.Add(id);
+            }
+            return delta;
         }
     }
 }
