@@ -366,7 +366,7 @@ namespace Main
             }
             else
             {
-                S.Add(A);
+                S.Add((int[])A.Clone());
             }
             // note that S is not copied at each recursive call
             // instead, S is a reference that can be updated
@@ -410,7 +410,7 @@ namespace Main
                     {
                         for (int i = 0; i < k; i++)
                         {
-                            result.Add(tuple[i]);
+                            result.Add(F.ElementAt(tuple[i]).Key);
                         }
                         return result;
                     }
