@@ -511,8 +511,6 @@ namespace Main
         private static List<int> GreedySetCover(HashSet<int> U, Dictionary<int, HashSet<int>> F)
         {
             var result = new List<int>();
-            var listF = F.ToList();
-
 
             while (U.Count != 0)
             {
@@ -528,7 +526,9 @@ namespace Main
                 }
 
                 result.Add(max.Key);
-
+                Debug.Log("Ucount: " + U.Count);
+                Debug.Log("max.count: " + max.Value.Count);
+                Debug.Log("Max: " + max);
                 // safe set subtraction
                 U.ExceptWith(max.Value);
                 foreach (var pair in F)
