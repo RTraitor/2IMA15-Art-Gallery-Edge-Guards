@@ -39,7 +39,7 @@
         /// </summary>
         /// <param name="p">The point to add</param>
         public void AddPoint(Vector2 p) {
-            if (MathUtil.EqualsEps(p, Point1) || MathUtil.EqualsEps(p, Point2)) {
+            if (MathUtil.EqualsEpsVertex(p, Point1) || MathUtil.EqualsEpsVertex(p, Point2)) {
                 // Point was already in the MultiLineSegment
                 return;
             }
