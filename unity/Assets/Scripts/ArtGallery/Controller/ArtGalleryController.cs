@@ -108,16 +108,15 @@
         public void CheckSolution()
         {
             // calculate ratio of area visible
-           // var ratio = m_solution.Area / LevelPolygon.Area;
+            var ratio = m_solution.Area / LevelPolygon.Area;
 
-            // Debug.Log(ratio + " part is visible");
-            m_advanceButton.Enable();
+            Debug.Log(ratio + " part is visible");
 
             // see if entire polygon is covered
-            // if (MathUtil.GEQEps(ratio, 1f, 0.001f))
-            // {
-            //     m_advanceButton.Enable();
-            // }
+            if (MathUtil.GEQEps(ratio, 1f, 0.001f))
+            {
+                m_advanceButton.Enable();
+            }
         }
 
         /// <summary>

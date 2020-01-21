@@ -27,21 +27,33 @@
             {
                 if (Count <= 0) return 0f;
 
+                MultiPolygon2D visiblePolygon;
+
                 // create multi polygon of visibility area
-                var visiblePolygon = new MultiPolygon2D(m_lighthouses[0].VisionPoly);
-
-                // add visibility polygons, cutting out the overlap
-                foreach (ArtGalleryLightHouse lighthouse in m_lighthouses.Skip(1))
+                // if no invisible lighthouses are in the solution, then we know it is an original Art Gallery level, thus we calculate with the vision polygons from the lighthouses
+                if (m_lighthousesinvis.Count == 0)
                 {
-                    visiblePolygon = Clipper.CutOut(visiblePolygon, lighthouse.VisionPoly);
-                    visiblePolygon.AddPolygon(lighthouse.VisionPoly);
+                    visiblePolygon = new MultiPolygon2D(m_lighthouses[0].VisionPoly);
+
+                    // add visibility polygons, cutting out the overlap
+                    foreach (ArtGalleryLightHouse lighthouse in m_lighthouses.Skip(1))
+                    {
+                        visiblePolygon = Clipper.CutOut(visiblePolygon, lighthouse.VisionPoly);
+                        visiblePolygon.AddPolygon(lighthouse.VisionPoly);
+                    }
                 }
-
-                // add visibility polygons for edge guards
-                foreach (ArtGalleryLightHouseInvis invis in m_lighthousesinvis)
+                // if there are invisible lighthouses are in the solution, then we know it is an Edge Guard level,
+                // thus we calculate with the vision polygons from the invisible lighthouses
+                else
                 {
-                    visiblePolygon = Clipper.CutOut(visiblePolygon, invis.VisionPoly);
-                    visiblePolygon.AddPolygon(invis.VisionPoly);
+                    visiblePolygon = new MultiPolygon2D(m_lighthousesinvis[0].VisionPoly);
+
+                    // add visibility polygons for edge guards
+                    foreach (ArtGalleryLightHouseInvis invis in m_lighthousesinvis.Skip(1))
+                    {
+                        visiblePolygon = Clipper.CutOut(visiblePolygon, invis.VisionPoly);
+                        visiblePolygon.AddPolygon(invis.VisionPoly);
+                    }
                 }
 
                 // return total area
