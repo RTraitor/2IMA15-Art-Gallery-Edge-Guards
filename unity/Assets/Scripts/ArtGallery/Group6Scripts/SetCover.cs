@@ -348,7 +348,7 @@ namespace Main
                 // first index has no predecessor
                 if (j == 0)
                 {
-                    for (var i = 0; i < n - (k + 1); i++)
+                    for (var i = 0; i < n - (k - 1); i++)
                     {
                         A[0] = i;
                         GenerateTuples(S, A, j + 1, k - 1, n);
@@ -357,7 +357,7 @@ namespace Main
                 else
                 {
                     // pick the next index compared to its predecessor
-                    for (var i = A[j - 1] + 1; i < n - (k + 1); i++)
+                    for (var i = A[j - 1] + 1; i < n - (k - 1); i++)
                     {
                         A[j] = i;
                         GenerateTuples(S, A, j + 1, k - 1, n);
