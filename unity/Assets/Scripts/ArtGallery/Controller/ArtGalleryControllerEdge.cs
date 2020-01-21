@@ -1179,7 +1179,7 @@ namespace ArtGallery
         {
             Debug.Log("Initialising Level Drawer...");
             m_areaDrawer = FindObjectOfType<VisibilityAreaDrawer>();
-            DCEL dcell = computeVisibilityRegions(LevelPolygon);
+            DCEL dcell = ComputeVisibilityRegions(LevelPolygon);
             if (m_areaDrawer != null)
             {
                 m_areaDrawer.VisibilityAreas = dcell;
