@@ -12,7 +12,7 @@
 
         public ArtGalleryIsland()
         {
-            m_scale = 4f;
+            m_scale = 30f;
         }
 
         // Use this for initialization

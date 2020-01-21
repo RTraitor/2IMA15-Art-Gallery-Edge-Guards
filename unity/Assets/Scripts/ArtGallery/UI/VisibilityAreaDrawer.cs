@@ -10,12 +10,12 @@
         private readonly Color edgeColor = new Color(252f / 255, 141f / 255, 98f / 255, 1f); // Red
         private readonly Color vertexColor = new Color(141f/255, 160f/255, 203f/255, 1f); // Blue
         private readonly Color faceColor = new Color(102f / 255, 194f / 255, 165f / 255, 0.7f); // Green
-        private readonly float VertexRadius = 0.2f;
+        private readonly float VertexRadius = 1f;
 
         // Boolean for whether to display certain parts of the DCEL
         private bool m_displayEdges = true;
         private bool m_displayVertices = true;
-        private bool m_displayFaces = true;
+        private bool m_displayFaces = false;
 
         // solution storing the cut lines
         private DCEL m_areas;
