@@ -3,5 +3,5 @@ For ($j = 0; $j -lt 10; $j++) {
     $fileAsStr = ".\Inputs\input_2_$j"
     $fileAsDir = Get-Item $fileAsStr
     # echo $fileAsDir
-    Measure-Command { Get-Content $fileAsDir | .\SetCoverDP\SetCoverBF.exe } | Select-Object -Property TotalSeconds
+    Measure-Command { Get-Content $fileAsDir | .\SetCoverBF\SetCoverBF.exe } | Select-Object -Property TotalSeconds
 }
