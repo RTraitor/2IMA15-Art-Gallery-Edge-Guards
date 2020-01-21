@@ -154,8 +154,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -60}
-  m_SizeDelta: {x: 600, y: 100}
+  m_AnchoredPosition: {x: 0, y: -40.93}
+  m_SizeDelta: {x: 600, y: 61.87}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &908837430
 MonoBehaviour:
@@ -206,21 +206,28 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 11497240, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
       propertyPath: m_Text
-      value: "Welcome as the new head of security in our art gallery!\r\n\r\nThe security
+      value: "Welcome as the new head of security in our art gallery!\r The security
         guards who look exactly like torches have to be assigned a certain wall they
         will patrol.\n\nTo prevent excessive workload, each guard can only patrol
-        a single wall.\n\r\nTry to assign the guards in such a way that the whole
-        art gallery will be covered!\n\nNote: Guards can look around the corners of
-        a wall they patrol!\n\r\nControls:\r\n- To assign a guard to a wall, click
-        near an edge inside the polygon\n- To unassign a guard from a wall, again
-        click near that edge inside the polygon\n- To toggle display of the visibility
-        areas, press <V> to toggle the vertices, <E> to toggle the edges, and <F>
-        to toggle the faces."
+        a single wall. Try to assign the guards in such a way that the whole art gallery
+        will be covered! Note: Guards can look around the corners of a wall they patrol!\n\r\nControls:\r\n-
+        To assign a guard to a wall, click near an edge inside the polygon\n- To unassign
+        a guard from a wall, again click near that edge inside the polygon\n- To toggle
+        display of the visibility areas, press <V> to toggle the vertices, <E> to
+        toggle the edges, and <F> to toggle the faces."
       objectReference: {fileID: 0}
     - target: {fileID: 11497240, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
       propertyPath: m_FontData.m_Font
       value: 
       objectReference: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    - target: {fileID: 22454554, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 22454554, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: -5
+      objectReference: {fileID: 0}
     - target: {fileID: 22485368, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -259,7 +266,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 22485368, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -10
+      value: 11.733
       objectReference: {fileID: 0}
     - target: {fileID: 22485368, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
       propertyPath: m_SizeDelta.x
@@ -267,7 +274,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 22485368, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
       propertyPath: m_SizeDelta.y
-      value: -220
+      value: -146.54
       objectReference: {fileID: 0}
     - target: {fileID: 22485368, guid: 47375d1ad9de78947b5dddba6bf6a125, type: 3}
       propertyPath: m_AnchorMin.x

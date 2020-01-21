@@ -16,6 +16,11 @@
         public const double EPS = 1e-4;
 
         /// <summary>
+        /// Small value used for floating point comparison of two vertices in a DCEL
+        /// </summary>
+        public const double VERTEX_EPS = 1e-1;
+
+        /// <summary>
         /// Some constants (based on Mathf)
         /// </summary>
         public static double PI { get { return Math.PI; } }
@@ -60,6 +65,16 @@
         /// <returns></returns>
         public static bool EqualsEps(Vector2 a_val1, Vector2 a_val2, double eps = EPS)
         {
+            return (a_val1 - a_val2).sqrMagnitude < eps;
+        }
+
+        /// <summary>
+        /// Compares two vectors to see if they are within Epsilon distance of each other
+        /// </summary>
+        /// <param name="a_val1"></param>
+        /// <param name="a_val2"></param>
+        /// <returns></returns>
+        public static bool EqualsEpsVertex(Vector2 a_val1, Vector2 a_val2, double eps = VERTEX_EPS) {
             return (a_val1 - a_val2).sqrMagnitude < eps;
         }
 
@@ -144,7 +159,7 @@
 
             if (SignedAngle < -PI- EPS || SignedAngle > PI + EPS)
             {
-                throw new Exception("Invalid angle");
+                throw new Exception("Invalid angle: " + SignedAngle);
             }
 
             if (SignedAngle >= 0) return SignedAngle;
